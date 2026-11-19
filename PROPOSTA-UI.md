@@ -15,7 +15,7 @@ Il documento elenca cosa cambia rispetto alla release e perché. Cresce a ogni g
 | Riga dei menu | I menu e, a destra, il progetto attivo con il suo CRS. Un clic sul nome seleziona il progetto nell'albero e ne mostra le proprietà; un clic sul CRS apre «Imposta CRS di progetto». |
 | Pulsantiera in alto | Nuovo, Apri, Salva, **Importa ▾** ed **Esporta ▾**. Dopo una linea verticale a puntini vengono i comandi che i plugin agganciano alla barra (§6). |
 | Vista 3D | Pulsantiera sovrapposta su una riga (§3). In alto a destra l'orientamento interattivo, in basso a sinistra i conteggi dell'asset selezionato (§3.3). |
-| Colonna destra | Sopra l'albero dei progetti, sotto una striscia di icone con il pannello selezionato. I pannelli sono Proprietà del layer, CityObject, Annotazione, Risultati lazo, Mappa 2D, Concetti semantici e Log. Nello stesso posto si aprono i comandi (§2). |
+| Colonna destra | Sopra l'albero dei progetti, sotto una striscia di icone con il pannello selezionato. I pannelli sono Proprietà del layer, CityObject, Annotazione, Risultati lazo, Annotazioni USAP (§11), Mappa 2D, Concetti semantici e Log. Nello stesso posto si aprono i comandi (§2). |
 | Riga di log | L'ultimo messaggio e i contatori di avvisi ed errori; un clic apre il pannello Log. |
 
 Rispetto a oggi:
@@ -61,7 +61,7 @@ Oggi quasi tutte le finestre sono modali, e finché sono aperte la vista non ris
 
 | Categoria | Finestre |
 |---|---|
-| Importa | Carica mesh, Carica nuvola di punti, Importa CityGML, Apri dataset annotato, Carica raster, Carica layer GIS, Carica immagini sferiche, Immagini sferiche…, Carica dal datalake. Vi rientrano anche i loro passi successivi: CRS del file, copia nel progetto, livello di dettaglio, variabile NetCDF, colore per attributo, esito. |
+| Importa | Carica mesh, Carica nuvola di punti, Importa CityGML, Apri dataset annotato, Carica raster, Carica layer GIS, Carica immagini sferiche, Immagini sferiche…, Carica dal datalake, Carica valori (CSV, TXT) dalle Proprietà dell'asset (§10). Vi rientrano anche i loro passi successivi: CRS del file, copia nel progetto, livello di dettaglio, variabile NetCDF, colore per attributo, esito. |
 | Esporta | Esporta progetto (.zip), Screenshot, Inventario di una cartella |
 | Progetto | Nuovo progetto, Apri progetto, Chiudi progetto, Verifica file orfani, CRS del progetto (dal CRS in alto a destra) |
 | Salvataggio | Salva progetto (Ctrl+S) |
@@ -77,17 +77,15 @@ Inoltre:
 
 | Da dove si aprono | Comandi |
 |---|---|
-| Geometria | Imposta colore geometria, Imposta opacità geometria, Imposta CRS geometria (con la domanda di conversione), Rimuovi geometria, Decimazione della nuvola, Dimensione dei punti |
-| Dati | Annotazioni della selezione corrente / Modifica le annotazioni della selezione, Salva campo di valori in USAP, Interroga campi di valori USAP, Colori originali dell'asset, Texture dell'asset |
-| Annotazioni | Nuova annotazione, Annotazioni USAP… |
+| Pulsantiera della vista | Annotazioni della selezione… (§3.6), l'esito di Interroga (§3.7) |
 | Passi interni ai comandi di annotazione | Esito della creazione, Nuovo CityObject, aggiunta o rimozione della selezione dalla membership, hash dell'asset, metadati, eliminazione, assessment, elementi, attributo generico, proprietà strutturata |
 | Servizi | Ombreggiatura, Pendenza |
 | Plugin | I comandi dei plugin (per esempio Statistiche dell'asset) e il loro esito. Fa eccezione «Inventario di una cartella», che sta in Esporta. |
-| Proprietà del layer e menu contestuale dell'albero | Rinomina, Opacità, Altezza, Livello di dettaglio, Colora per attributo, Rimuovi |
+| Proprietà del layer e menu contestuale dell'albero | Rinomina, Colore, Opacità, Imposta CRS (con la domanda di conversione), Rimuovi, Dimensione dei punti, Decimazione, Altezza, Livello di dettaglio, Colora per attributo, Salva in USAP (§10) |
 
 ### 2.5 Da rivedere
 
-- **Tabelle grandi.** Annotazioni USAP… e Annotazioni della selezione per ora vanno nel pannello così come sono. Vanno rifatte; si deciderà poi se e come spostarle dal pannello.
+- **Tabelle grandi.** Annotazioni USAP (ora pannello fisso, §11.1) e Annotazioni della selezione per ora vanno nel pannello così come sono. Vanno rifatte; si deciderà poi se e come spostarle dal pannello.
 - **Larghezza delle finestre.** Le finestre di oggi sono disegnate per 400–800 px di larghezza: nel pannello vanno ridisposte in colonna.
 - **Una possibile strada in Qt.** Il contenuto di ogni `QDialog` diventa un widget non modale ospitato in un `QStackedWidget` del pannello destro.
 
@@ -105,7 +103,7 @@ Si seleziona però un asset alla volta, e la scelta fra area e punti dipende sol
 **Proposta:**
 - **Selezione a lazo.** Un solo strumento: facce se l'asset selezionato è una mesh, punti se è una nuvola. È la logica che `start_new_annotation()` già usa per scegliere lo strumento (`mainwindow.cpp:10338`).
 - **Selezione a lazo (spigoli).** È l'attuale «(linea)» e resta uno strumento separato: è l'unica eccezione. Serve solo sulle mesh; con una nuvola selezionata è disabilitato.
-- **Annotazioni › Strumenti** si riduce di conseguenza a: Interroga/modifica con il mouse, Selezione a lazo, Selezione a lazo (spigoli), Annulla selezione.
+- **Annotazioni › Strumenti** esce dal menu (§11): i lazi e «Annulla selezione» restano nella pulsantiera della vista, e Interroga ne diventa l'ultimo pulsante (§3.7).
 
 ### 3.2 Modo di disegno: tre pulsanti esclusivi
 
@@ -143,9 +141,38 @@ Non c'è un segno visibile che dica quale plugin ha lasciato l'evidenziazione.
 **Oggi.** Accanto ai lazi ci sono «Selezione singola», «Selezione additiva» e «Selezione sottrattiva» (`actionSingle_selection`, `actionAdditive_selection`, `actionSubtractive_selection`). Non sono strumenti: dicono come il prossimo lazo cambia la selezione. «Singola» la sostituisce, «additiva» aggiunge gli elementi, «sottrattiva» li toglie (`SelectionType` in `selectiontools/selected_elements.h:25`, applicato in `LassoPointSelectionStyle.cpp:481`). Il nome «singola» e l'icona a freccia fanno pensare a uno strumento di selezione con un clic, che non esiste. Inoltre il modo attivo è evidenziato come il lazo attivo, quindi sembrano due strumenti accesi insieme.
 
 **Proposta.**
-- **Nomi.** I modi si chiamano «Sostituisci la selezione», «Aggiungi alla selezione» e «Togli dalla selezione». Il sottomenu Annotazioni › Modalità di selezione diventa «Modo del lazo».
+- **Nomi.** I modi si chiamano «Sostituisci la selezione», «Aggiungi alla selezione» e «Togli dalla selezione». Il sottomenu Annotazioni › Modalità di selezione esce dal menu (§11): i modi restano solo nella pulsantiera.
 - **Gruppo separato.** Nella pulsantiera della vista i tre modi formano un gruppo a parte, subito dopo i lazi. L'icona di «Sostituisci» è un quadrato pieno, non più una freccia.
 - **Colori.** Il blu pieno indica solo lo strumento attivo, cioè il lazo. I modi esclusivi, sia quello del lazo sia il modo di disegno (§3.2), mostrano la scelta in grigio con una linea sotto. Il modo del lazo resta sbiadito finché un lazo non è attivo.
+
+### 3.6 Annotare la selezione: un solo pulsante
+
+**Oggi.** Due comandi portano alla stessa finestra, «Annotazioni della selezione» (`SelectionAnnotationsDialog`): l'elenco delle annotazioni toccate dalla selezione, «Crea dalla selezione», metadati, membership ed eliminazione.
+- **Nuova annotazione** (`start_new_annotation`, `mainwindow.cpp:10290`) svuota la selezione, arma il lazo adatto all'asset e apre la finestra quando il lazo si chiude (`mainwindow.cpp:10395`).
+- **Dati › Modifica le annotazioni della selezione** (`edit_selection_annotations`, `mainwindow.cpp:7011`) apre la finestra sulla selezione che c'è già, per esempio una fatta con più lazi in «Aggiungi alla selezione».
+
+**Proposta.** Un solo pulsante nella pulsantiera della vista, «Annotazioni della selezione…»:
+- **con una selezione:** apre la finestra su quella;
+- **senza selezione:** arma il lazo e apre la finestra quando il lazo si chiude, come oggi Nuova annotazione.
+
+**Conseguenza.** Oggi Nuova annotazione svuota apposta la selezione precedente, perché un lazo vecchio non passi per quello nuovo (`mainwindow.cpp:10350`). Con il pulsante unico la selezione presente viene usata. È però visibile, con il conteggio nella vista (§3.3), e «Annulla selezione» è accanto.
+
+**Aggiungi e togli dalla membership.** Restano solo dentro la finestra, dove si sceglie l'annotazione a cui aggiungere o da cui togliere la selezione (`selection_annotations_dialog.cpp:215-220`). Non vanno nella pulsantiera della vista: lì non c'è un'annotazione scelta.
+
+### 3.7 Interroga: ultimo pulsante della pulsantiera
+
+**Oggi.** «Interroga/modifica con il mouse» (`actionQuery_edit_with_mouse`, `mainwindow.cpp:10020`) sta nella barra degli strumenti delle annotazioni e in Annotazioni › Strumenti. È attiva solo con un layer GIS o un set `.ant` selezionato nell'albero (`mainwindow.cpp:13211`):
+- su un layer GIS, il clic su un elemento ne mostra le proprietà in una finestra (`genericvtkwidget.cpp:4393`);
+- su un set `.ant`, il clic su una faccia evidenzia l'annotazione che la contiene e apre la finestra dei suoi attributi (`viewer_project.cpp:4580`).
+
+**Proposta.**
+- **Posto.** Ultimo pulsante della pulsantiera della vista, dopo le annotazioni. Esce dal menu.
+- **Strumento.** Fa gruppo con i lazi: uno solo attivo alla volta, come oggi (`mainwindow.cpp:10048`), ed è blu quando è attivo (§3.5).
+- **Solo layer GIS.** I set `.ant` escono dal prodotto (§11.2).
+- **Spento** se nell'albero non è selezionato un layer GIS; il suggerimento lo dice.
+- **Esito nel pannello** (§2). Un nuovo clic sostituisce l'esito precedente e lo strumento resta attivo. L'esito non usa la selezione, quindi non la blocca.
+
+**Da decidere.** Oggi attivare Interroga svuota la selezione del lazo (`mainwindow.cpp:10022`). Lo strumento non la usa: si propone di non svuotarla.
 
 ## 4. Menu Visualizza (oggi Vista)
 
@@ -162,8 +189,8 @@ Il menu si rinomina in **Visualizza**. Escono le voci già coperte dalla pulsant
 | Solido, Wireframe, Vertice | `actionSolid`, `actionWireframe`, `actionVertex` | tolte | pulsanti esclusivi della vista (§3.2) |
 | Mostra proprietà del layer | `toggleViewAction()` del dock, `mainwindow.cpp:14831` | tolta | icona della striscia |
 | Mostra pannello informativo | `actionShow_InfoPanel`, `mainwindow.cpp:5775` | tolta | icone CityObject, Annotazione, Risultati lazo |
-| Mostra istogramma (PDF) | `actionShow_PdfDock`, `mainwindow.cpp:673` | resta | da decidere (§10) |
-| Mostra legenda | `actionShowLegend`, `mainwindow.cpp:788` | resta | da decidere (§10) |
+| Mostra istogramma (PDF) | `actionShow_PdfDock`, `mainwindow.cpp:673` | resta | da decidere (§12) |
+| Mostra legenda | `actionShowLegend`, `mainwindow.cpp:788` | resta | da decidere (§12) |
 | Pannelli › … | `mainwindow.cpp:921` | tolto | striscia dei pannelli |
 | Adatta la vista alla scena | `mainwindow.cpp:1056` | tolta | pulsante della vista |
 | Adatta la vista alla selezione | `mainwindow.cpp:1060` | tolta | pulsante della vista |
@@ -338,9 +365,135 @@ Il menu resta vuoto ed esce dalla barra dei menu. Note per l'implementazione:
 - **Mesh e nuvola vanno separate.** Le azioni di un layer sono definite in `utils/layer_info.cpp:61-83`, dove `Kind::Dataset` vale sia per le mesh sia per le nuvole. Per aggiungere Dimensione dei punti e Decimazione solo alle nuvole va separato il tipo, oppure va filtrata la lista in base al tipo di dataset.
 - **Un'etichetta da aggiornare.** Un'etichetta delle Preferenze cita il menu Geometria (`dialogs/preferences_dialog.cpp:77`).
 
-## 10. Punti aperti
+## 10. Menu Dati: tolto
+
+Vale il criterio del §9: un solo posto visibile, il più immediato.
+
+| Voce di oggi | Nel codice | Esito | Dove si trova |
+|---|---|---|---|
+| Carica dati | `actionLoad_data_2`, `mainwindow.cpp:9258` | spostata e rinominata | «Carica valori (CSV, TXT)…» nelle Proprietà del layer di mesh e nuvole, e nel tasto destro |
+| Importa CityGML… | `mainwindow.cpp:945` | tolta | menu Importa della pulsantiera |
+| Apri dataset annotato (CityGML + USAP)… | `mainwindow.cpp:961` | tolta | menu Importa della pulsantiera |
+| Annotazioni della selezione corrente (USAP)… | `open_selection_annotations`, `mainwindow.cpp:6881` | tolta | pannello Risultati lazo della striscia |
+| Modifica le annotazioni della selezione (USAP)… | `edit_selection_annotations`, `mainwindow.cpp:7011` | tolta | pulsante «Annotazioni della selezione…» della vista (§3.6) |
+| Salva campo di valori in USAP… | `save_value_field`, `mainwindow.cpp:7321` | spostata e rinominata | «Salva in USAP…» nelle Proprietà del layer del campo scalare, e nel tasto destro |
+| Interroga campi di valori USAP… | `open_value_field_query`, `mainwindow.cpp:7470` | spostata | sezione «Campi di valori» del pannello Annotazioni USAP (§11.1) |
+| Carica raster (GeoTIFF, NetCDF)… | `mainwindow.cpp:1041` | tolta | menu Importa della pulsantiera |
+| Carica immagini sferiche (CSV)… | `mainwindow.cpp:1045` | tolta | menu Importa della pulsantiera |
+| Colori originali dell'asset | `mainwindow.cpp:1105` | sostituita | controllo «Aspetto» nelle Proprietà del layer (§10.1) |
+| Texture dell'asset | `mainwindow.cpp:1139` | sostituita | idem |
+
+Il menu resta vuoto ed esce dalla barra dei menu.
+
+### 10.1 Aspetto dell'asset
+
+**Oggi.** Un asset ha tre aspetti che si escludono a vicenda (`viewer_project.cpp:4793-4825`):
+- **colore uniforme**, scelto con «Colore…»;
+- **colori del file**, cioè i colori per vertice letti dal file; valgono anche per le nuvole, per esempio i LAS con RGB;
+- **texture**, solo per gli OBJ il cui `.mtl` indica un'immagine che si trova accanto al file.
+
+Il colore sta nelle Proprietà del layer, gli altri due nel menu Dati. Se l'asset non ha colori o texture lo si scopre solo dopo il clic, con un messaggio.
+
+**Proposta.** Nelle Proprietà del layer di mesh e nuvole, un controllo esclusivo **Aspetto: Colore uniforme | Colori del file | Texture**, grigio come gli altri modi (§3.5). «Colore…» resta accanto e sceglie il colore uniforme. Il tasto destro ripete le tre voci.
+- **Opzioni spente.** Un'opzione che l'asset non ha resta visibile ma spenta, e il suggerimento dice perché. L'applicazione lo sa già prima del clic: l'asset porta con sé `original_point_colors` e `texture`.
+- **Nuvole.** La texture non compare.
+- **Annotazioni visibili.** Resta la domanda di oggi: le annotazioni visibili ricoprono i colori del file, quindi scegliendo «Colori del file» si chiede se nasconderle (`mainwindow.cpp:1123`).
+- **Implementazione.** Le azioni del layer sono in `utils/layer_info.cpp:63-65`; vanno aggiunte le tre opzioni, per i soli dataset 3D.
+
+### 10.2 Campi scalari
+
+**Oggi.**
+- **Carica dati** legge un file CSV o TXT. Una finestra chiede separatore, righe da saltare e colonna (`importtextdialog`). Il file diventa un campo scalare, cioè una riga figlia dell'asset selezionato nell'albero (`mainwindow.cpp:3911`). I valori devono essere tanti quante le facce o quanti i vertici dell'asset, altrimenti il file è rifiutato (`viewer_project.cpp:3776`). Con l'occhio acceso il campo colora il suo asset in scala di grigi, con la barra dei colori (`genericvtkwidget.cpp:819-860`).
+- **Servizi › Ombre** produce lo stesso tipo di riga.
+- **Salva campo di valori in USAP** prende un campo scalare dell'asset e lo scrive nel pacchetto USAP, come annotazione con il suo assessment e i valori, in una sola transazione. Se nell'albero è selezionato un campo, lo propone già (`numeric_fields_of`, `mainwindow.cpp:7245`).
+- **Interroga campi di valori USAP** elenca i campi salvati nel pacchetto, applica un filtro (per esempio `> 0,5`) ed evidenzia gli elementi nella vista. È già una finestra non modale (`mainwindow.cpp:7487`): portarla nel pannello costa poco.
+
+**Proposta.**
+- **Asset (mesh e nuvole):** «Carica valori (CSV, TXT)…» nelle Proprietà del layer e nel tasto destro. Il campo nasce sotto l'asset che si ha in mano, senza chiedere quale. Non va in Importa: lì avrebbe comunque bisogno di un asset selezionato. Le sue finestre restano mobili come gli altri import (§2.3).
+- **Campo scalare:** «Salva in USAP…» nelle Proprietà del layer e nel tasto destro. Oggi la riga ha solo Mostra/Nascondi, Inquadra e Sposta (`utils/layer_info.cpp:69-70`).
+- **Pannello Annotazioni USAP:** la sezione «Campi di valori» (§11.1). In USAP un campo di valori è un'annotazione, e la sezione interroga lo stesso pacchetto.
+
+### 10.3 Annotazioni della selezione corrente
+
+È già il pannello Risultati lazo della striscia. Oggi però è la voce di menu a collegare il pannello al pacchetto USAP in uso e a verificare l'asset (`mainwindow.cpp:6881-6911`). Aperto dall'icona della striscia, il pannello deve fare lo stesso da solo, altrimenti resta vuoto.
+
+### 10.4 Messaggi da aggiornare
+
+Questi messaggi citano il menu Dati:
+- `mainwindow.cpp:2502`, `mainwindow.cpp:4628`, `mainwindow.cpp:4723`, `mainwindow.cpp:7354`;
+- `dialogs/info_panel.cpp:514`, `dialogs/info_panel.cpp:1073-1074`;
+- `dialogs/city_object_panel.cpp:1481`, `dialogs/lasso_results_panel.cpp:401`;
+- `genericvtkwidget.cpp:2308` e `myInteractorStyleSelectionPolyData.h:698`, che rimandano a «Data > Edit the annotations of the selection».
+
+La guida introduttiva rimanda a «Data → Annotations of the current selection (USAP)…» (`dialogs/welcome_guide_dialog.cpp:127`).
+
+Nella documentazione: `docs/DIALOGHI.md` (11 citazioni), `docs/EVIDENZE.md` (9), `docs/PANORAMICA.md` (2).
+
+## 11. Menu Annotazioni: tolto
+
+Vale il criterio del §9.
+
+| Voce di oggi | Nel codice | Esito | Dove si trova |
+|---|---|---|---|
+| Nuova annotazione… | `start_new_annotation`, `mainwindow.cpp:10290` | unita a «Modifica le annotazioni della selezione» (§3.6) | pulsantiera della vista |
+| Mostra tabella delle annotazioni | `actionView_annotations_table`, `mainwindow.cpp:5527` | tolta | esce dall'interfaccia: lavora solo sui set `.ant` (§11.2) |
+| Filtra… | `actionFilter`, `mainwindow.cpp:8145` | tolta | esce dall'interfaccia: lavora solo sui set `.ant` |
+| Colora la mesh in base al valore dell'attributo… | `actionColor_mesh_by_attribute_value`, `mainwindow.cpp:8342` | tolta dal menu | «Colora per attributo…» nelle Proprietà dei layer GIS; sui set `.ant` esce (§11.2) |
+| Imposta colore annotazione | `actionSet_annotation_color`, `mainwindow.cpp:11209` | tolta | esce con i set `.ant` (§11.2) |
+| Strumenti › Interroga/modifica con il mouse | `actionQuery_edit_with_mouse` | spostata | ultimo pulsante della pulsantiera della vista (§3.7) |
+| Strumenti › Selezione a lazo, (spigoli), Annulla selezione | `menuTools` | tolte dal menu | pulsantiera della vista |
+| Modalità di selezione › | `menuSelection_mode` | tolto dal menu | pulsantiera della vista (§3.5) |
+| Rimuovi set di annotazioni… | `actionRemove_annotation` | tolta | esce con i set `.ant` (§11.2) |
+| Carica layer GIS (drappeggiato)… | `actionLoad_GPKG_draped`, `mainwindow.cpp:13298` | tolta | menu Importa della pulsantiera |
+| Annotazioni USAP… | `open_usap_dialog`, `mainwindow.cpp:7492` | diventa un pannello | pannello fisso «Annotazioni USAP» della striscia (§11.1) |
+
+Il menu resta vuoto ed esce dalla barra dei menu, che diventa: Progetto, Visualizza, Servizi, Plugin, Info.
+
+### 11.1 Annotazioni USAP: pannello fisso
+
+**Oggi.** Una finestra modale (`UsapDialog`, aperta con `exec()` a `mainwindow.cpp:7541`) con:
+- l'elenco di tutte le annotazioni di un pacchetto USAP; quella scelta si evidenzia nella vista;
+- «Esporta annotazioni della mesh»: scrive nel pacchetto il set `.ant` selezionato nell'albero, con il CityObject e la classe semantica indicati nella finestra;
+- «Importa nel progetto»: trasforma le annotazioni del pacchetto in set `.ant` del progetto.
+
+**Proposta.** Diventa un pannello fisso della striscia, «Annotazioni USAP», disponibile come gli altri pannelli. Esce dal menu. Ha due sezioni:
+- **Annotazioni:** il pacchetto (Sfoglia…, Apri/Ricarica), l'elenco delle annotazioni e i dettagli di quella scelta, che si evidenzia nella vista.
+- **Campi di valori:** il contenuto di oggi di «Interroga campi di valori» (§10.2). Dopo «Salva in USAP…» la sezione si aggiorna, come oggi la finestra (`mainwindow.cpp:7461`).
+
+Escono «Esporta annotazioni della mesh», con i campi CityObject e Classe semantica che servono solo a quella, e «Importa nel progetto»: lavorano sui set `.ant` (§11.2).
+
+Note per l'implementazione:
+- **Tabelle.** Per ora sono quelle delle finestre; vanno rifatte come le altre tabelle grandi (§2.5).
+- **Non modale.** Il `QDialog` di Annotazioni USAP diventa un widget non modale; la finestra dei campi di valori lo è già (`mainwindow.cpp:7487`).
+- **Sfoglia….** Oggi usa una finestra di salvataggio (`dialogs/usap_dialog.cpp:155`), perché si poteva esportare verso un pacchetto nuovo. Senza esportazione basta una finestra di apertura.
+
+### 11.2 Set di annotazioni `.ant`: escono dal prodotto
+
+**Oggi.** È il formato del prototipo. Nella release il caricamento diretto è nascosto (`mainwindow.cpp:997-1000`): un set nasce solo
+- da un progetto vecchio che ne contiene,
+- da «Importa nel progetto» di Annotazioni USAP,
+- da Filtra.
+
+**Decisione CNR (20/11/2026).** I file `.ant` non si usano più, né nel progetto né nelle esportazioni. Le annotazioni stanno solo nel pacchetto USAP. Un uso interno del formato, se serve, resta una scelta di DVISION.
+
+**Conseguenze:**
+- escono Mostra tabella delle annotazioni, Filtra…, Imposta colore annotazione e Rimuovi set di annotazioni;
+- escono le azioni del set nelle Proprietà del layer (`Kind::Annotation`, `utils/layer_info.cpp:66-68`);
+- escono dal pannello Annotazioni USAP «Esporta annotazioni della mesh» e «Importa nel progetto» (§11.1);
+- Interroga lavora solo sui layer GIS (§3.7).
+
+**Da decidere con DVISION:** come aprire un progetto vecchio che contiene set `.ant` (§12).
+
+### 11.3 Testi da aggiornare
+
+Nessun messaggio del programma cita il menu Annotazioni. Lo cita la guida introduttiva: «Annotations → New annotation…» (`dialogs/welcome_guide_dialog.cpp:115`). Nella documentazione: `docs/DIALOGHI.md` (4 citazioni), `docs/EVIDENZE.md` (2), `docs/PANORAMICA.md` (3).
+
+## 12. Punti aperti
 
 - **Istogramma e legenda:** diventano pannelli della striscia o restano voci di Visualizza?
 - **Tabelle grandi nel pannello:** vedi §2.5.
 - **Comandi che seguono la selezione:** oltre ai plugin (§2.2, punto 5) potrebbero essercene altri, da aggiungere all'eccezione uno per uno.
 - **Altri menu:** si rivedono dopo questo primo giro.
+- **Progetti vecchi con set `.ant`:** come aprirli, per esempio ignorandoli con un avviso o convertendoli nel pacchetto USAP? Da decidere con DVISION (§11.2).
+- **Evidenziazione di «Interroga campi di valori»:** la finestra ha un suo «Togli evidenziazione». Può passare all'etichetta nella vista, come per i plugin (§3.4)?
+- **Da fare a fine revisione — variante con finestre agganciabili:** una versione alternativa del mockup (in questa stessa cartella) con i comandi in finestre agganciabili invece che nel pannello fisso. Il modo di farla è da definire.

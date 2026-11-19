@@ -7,7 +7,7 @@ modifiche elencate in `PROPOSTA-UI.md` (raccolte in `proposta.js`).
 ## Disposizione
 
 - **Barra del titolo:** icona, nome del programma, riduci, ingrandisci, chiudi.
-- **Riga dei menu:** i menu attuali; a destra il progetto attivo e il suo CRS (un clic sul CRS
+- **Riga dei menu:** i menu della proposta (Progetto, Visualizza, Servizi, Plugin, Info); a destra il progetto attivo e il suo CRS (un clic sul CRS
   apre la scelta del sistema di riferimento).
 - **Pulsantiera in alto**, solo apertura, importazione ed esportazione: Nuovo, Apri, Salva,
   **Importa ▾** ed **Esporta ▾**; dopo una linea a puntini, i comandi che i plugin agganciano
@@ -17,15 +17,17 @@ modifiche elencate in `PROPOSTA-UI.md` (raccolte in `proposta.js`).
     annulla selezione;
   - viste predefinite, adatta alla scena o alla selezione, vista predefinita, modo di disegno
     (tre pulsanti esclusivi);
-  - nuova annotazione, aggiungi o rimuovi la selezione dalla membership, annotazioni della selezione.
+  - annotazioni della selezione: con una selezione apre la finestra delle sue annotazioni, senza
+    arma il lazo e la apre quando il lazo si chiude;
+  - in fondo, Interroga: con un layer GIS selezionato, il clic su un elemento ne mostra le proprietà.
 
   In alto a destra c'è l'orientamento (N, E, Z); in basso al centro, solo quando un plugin ha
   evidenziato qualcosa, un'etichetta che lo dice e con la ✕ lo toglie; in basso a sinistra i conteggi dell'asset
   selezionato (niente se non c'è un asset 3D selezionato).
 - **Colonna destra:** l'albero dei progetti, sempre visibile (l'occhio mostra o nasconde un
   layer, il tasto destro apre le sue azioni). Sotto, una striscia di icone stile Blender con
-  sette pannelli: Proprietà del layer, CityObject, Annotazione, Risultati lazo, Mappa 2D,
-  Concetti semantici e, in fondo, Log.
+  otto pannelli: Proprietà del layer, CityObject, Annotazione, Risultati lazo, Annotazioni USAP,
+  Mappa 2D, Concetti semantici e, in fondo, Log.
 - **Riga di log in basso:** l'ultimo messaggio e i contatori di avvisi ed errori; un clic apre
   il pannello Log. Un nuovo avviso accende un punto sull'icona del Log. A destra ci sono i
   loghi, con quello del CNR a colori invertiti.
@@ -61,7 +63,7 @@ e plugin, Info, il visualizzatore a 360° e le finestre di sistema per i file (e
 - `#panel=log`: apre un pannello (`props`, `cityobject`, `annotation`, `lasso`, `map`,
   `concepts`, `log`).
 - `#dlg=preferences`: apre una finestra; `#dlg=geomColor` apre un comando nel pannello.
-- `#menu=Annotazioni/Strumenti`: apre un menu; vale anche `#menu=Importa`.
+- `#menu=Servizi/Calcola`: apre un menu; vale anche `#menu=Importa`.
 - `#highlight`: mostra l'evidenziazione lasciata da un plugin, con la sua etichetta.
 - `#review`: attiva le note di revisione.
 - `#tour`: avvia il tour della nuova disposizione.

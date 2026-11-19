@@ -15,7 +15,6 @@ delete ACTIONS.lasso_points;
 Object.assign(ACTIONS.sel_single, { t: "Sostituisci la selezione", tip: "Modo del lazo: il prossimo lazo sostituisce la selezione" });
 Object.assign(ACTIONS.sel_additive, { t: "Aggiungi alla selezione", tip: "Modo del lazo: il prossimo lazo si aggiunge alla selezione" });
 Object.assign(ACTIONS.sel_subtractive, { t: "Togli dalla selezione", tip: "Modo del lazo: il prossimo lazo si toglie dalla selezione" });
-MENUS.find((m) => m.t === "Annotazioni").items.find((i) => i.t === "Modalità di selezione").t = "Modo del lazo";
 
 /* ---------- §3.2 Modo di disegno: tre pulsanti esclusivi, solo nella vista ---------- */
 for (const [id, t] of [["draw_solid", "Solido"], ["draw_wire", "Wireframe"], ["draw_vertex", "Vertici"]]) {
@@ -92,14 +91,74 @@ delete ACTIONS.measure_surface.note;
 delete ACTIONS.plugin_inventory.note;
 delete ACTIONS.plugin_assetstats.note;
 
-/* ---------- Menu Annotazioni › Strumenti, conseguenza del §3.1 ---------- */
-MENUS.find((m) => m.t === "Annotazioni").items.find((i) => i.t === "Strumenti").items =
-  ["query_mouse", SEP, "lasso", "lasso_line", SEP, "clear_selection"];
+/* ---------- §10 Menu Dati: tolto ---------- */
+// Importa CityGML, Apri dataset annotato, Carica raster, Carica immagini sferiche: sono già in Importa.
+// Annotazioni della selezione corrente: è il pannello Risultati lazo della striscia.
+// Modifica le annotazioni della selezione: è il pulsante «Annotazioni della selezione…» della vista (§3.6).
+// Colori originali e Texture: con Colore… diventano l'Aspetto dell'asset nelle Proprietà del layer.
+// Carica dati: diventa «Carica valori (CSV, TXT)…», azione dell'asset. Salva campo di valori: azione del
+// campo scalare. Interroga campi di valori: sezione del pannello Annotazioni USAP (§11).
+MENUS.splice(MENUS.findIndex((m) => m.t === "Dati"), 1);
+for (const key of ["dataset", "cloud"]) {
+  const list = LAYER_ACTIONS[key];
+  list.splice(list.findIndex(([label]) => label === "Colore..."), 0, ["Aspetto", "@appearance"]);
+  list.splice(list.findIndex(([label]) => label === "Sposta su"), 0, ["Carica valori (CSV, TXT)...", "loadData"]);
+}
+{
+  const original = DIALOGS.loadData;
+  DIALOGS.loadData = (ctx) => Object.assign(original(ctx), { title: "Carica valori (CSV, TXT)" });
+}
+LAYER_ACTIONS.scalar.splice(2, 0, ["Salva in USAP...", "saveValueField"]);
+for (const id of ["load_data", "sel_annotations", "sel_annotations_edit", "original_colors", "asset_texture"]) delete ACTIONS[id].note;
+
+/* ---------- §3.6 Annotare la selezione: un solo pulsante ---------- */
+// Nuova annotazione e Modifica le annotazioni della selezione aprono la stessa finestra: si uniscono.
+// Con una selezione la finestra si apre su quella; senza, si arma il lazo e la finestra si apre alla chiusura.
+Object.assign(ACTIONS.new_annotation, { t: "Annotazioni della selezione...",
+  tip: "Annotazioni della selezione\nCon una selezione apre la finestra delle sue annotazioni.\nSenza selezione arma il lazo: la finestra si apre quando lo chiudi." });
+delete ACTIONS.new_annotation.note;
 
 /* Note di revisione superate dalle modifiche. */
 for (const id of ["view_top", "view_west", "view_south", "view_ne", "default_view", "show_axes", "load_spherical", "spherical_list",
   "show_histogram", "show_legend"]) delete ACTIONS[id].note;
-ACTIONS.show_histogram.note = ACTIONS.show_legend.note = "Da decidere: pannello della striscia o voce di Visualizza (PROPOSTA-UI.md §10).";
+ACTIONS.show_histogram.note = ACTIONS.show_legend.note = "Da decidere: pannello della striscia o voce di Visualizza (PROPOSTA-UI.md §12).";
+
+/* ---------- §3.7 Interroga: ultimo pulsante della pulsantiera della vista ---------- */
+// Legge le proprietà degli elementi del layer GIS selezionato (nella release anche dei set .ant, che escono: §11.2).
+// Fa gruppo con i lazi: uno solo attivo alla volta, come nella release (mainwindow.cpp:10048).
+Object.assign(ACTIONS.query_mouse, { dis: false, group: "lasso",
+  tip: "Clic su un elemento del layer GIS selezionato per leggerne le proprietà." });
+delete ACTIONS.query_mouse.note;
+
+/* ---------- §11 Menu Annotazioni: tolto ---------- */
+// Nuova annotazione: è il pulsante «Annotazioni della selezione…» della vista (§3.6).
+// Mostra tabella delle annotazioni, Filtra…, Imposta colore annotazione, Rimuovi set di annotazioni: lavorano
+// solo sui set .ant, che escono dal prodotto (§11.2). Colora per attributo: resta nelle Proprietà dei layer GIS.
+// Strumenti › e Modalità di selezione ›: sono nella pulsantiera della vista. Carica layer GIS: è in Importa.
+// Annotazioni USAP…: pannello fisso della striscia (layout.js, PANELS), con la sezione Campi di valori.
+MENUS.splice(MENUS.findIndex((m) => m.t === "Annotazioni"), 1);
+
+/* §11.1 Pannello Annotazioni USAP: il pacchetto e le sue annotazioni, poi i campi di valori (ex Interroga
+ * campi di valori). Escono «Esporta annotazioni della mesh», con i campi CityObject e Classe semantica che
+ * servivano solo a quella, e «Importa nel progetto»: lavoravano sui set .ant (§11.2). */
+DIALOGS.usapPanel = () => ({
+  body: `<div class="pathrow"><label style="align-self:center">Pacchetto:</label>${H.input(DATA + "/catania.usap.gpkg", "percorso di un .usap.gpkg")}<button class="btn sm" data-dlg="openPackage">Sfoglia…</button><button class="btn sm">Apri/Ricarica</button></div>
+    <div class="section-title">Annotazioni (47.666 nel pacchetto)</div>
+    ${H.table(["Id", "Uid", "Classe", "Etichetta", "Stato", "Elementi"], [
+      ["1", "ann_bldg_w234077276", "Building", "ann_bldg_w234077276", "draft", "412"],
+      ["2", "ann_bldg_w130301360", "Building", "ann_bldg_w130301360", "draft", "96"],
+      ["3", "ann_bldg_w129791254_Roof_1", "RoofSurface", "ann_bldg_w129791254_Roof_1", "draft", "38"],
+      ["33718", "ann_bldg_w29315736", "Building", "Teatro Greco Romano", "draft", "3401"],
+      ["33719", "ann_bldg_w29315736_Roof_1", "RoofSurface", "ann_bldg_w29315736_Roof_1", "draft", "214"]], { h: 150, sel: 4 })}
+    <div class="code" style="height:118px">Uid: ann_bldg_w29315736
+Classe: Building (http://www.opengis.net/citygml/building/3.0#Building)
+Confidenza: 0,90
+Elementi su catania.obj, parte 1 (facce): 3401
+Attributi:
+{ "derivation": "catania-pipeline-v1" }</div>
+    <div class="section-title">Campi di valori (2)</div>
+    ${DIALOGS.queryValueFields().body}`,
+});
 
 /* ---------- §2 I comandi si aprono nel pannello a destra ---------- */
 /* Eccezioni: finestre che restano mobili (§2.3). Una finestra aperta da una finestra mobile
@@ -107,7 +166,8 @@ ACTIONS.show_histogram.note = ACTIONS.show_legend.note = "Da decidere: pannello 
 const FLOATING = {
   importa:      ["datalake", "datalakeSettings", "loadMesh", "meshEpsg", "meshCopy", "loadCloud", "cloudEpsg", "cloudQuestion",
                  "importCityGml", "citygmlLod", "openAnnotated", "openAnnotatedUsap", "annotatedResult", "loadRaster", "netcdf",
-                 "loadSpherical", "sphericalLoaded", "sphericalImages", "loadGis"],
+                 "loadSpherical", "sphericalLoaded", "sphericalImages", "loadGis",
+                 "loadData", "importText"], // Carica valori (CSV, TXT): azione dell'asset, ma è un import (§10)
   esporta:      ["exportZip", "exportDone", "screenshot", "plugin_inventory"],
   progetto:     ["newProject", "openProject", "closeProject", "projectCrs", "orphanFiles"],
   sessione:     ["saveSession"],
@@ -122,9 +182,10 @@ for (const [kind, ids] of Object.entries(FLOATING)) ids.forEach((id) => (FLOATIN
 
 /* Selezione bloccata durante un comando (§2.2 punto 5), tranne nei comandi progettati per
  * seguirla: oggi i pannelli dei plugin (PluginRunWidget, che si aggiorna a ogni nuova selezione). */
-const FOLLOWS_SELECTION = new Set(["runPlugin", "plugin_assetstats", "pluginResult"]);
+const FOLLOWS_SELECTION = new Set(["runPlugin", "plugin_assetstats", "pluginResult",
+  "gisFeature"]); // l'esito di Interroga (§3.7) non usa la selezione: la lascia libera
 
 /* Comandi che lavorano sul layer selezionato: il pannello lo indica e il bersaglio resta
  * quello dell'apertura anche se nell'albero si seleziona un'altra riga (§2.2). */
 const LAYER_COMMANDS = new Set(["geomColor", "geomOpacity", "geomCrs", "crsConvert", "removeGeometry", "cloudDecimation", "pointSize",
-  "lod", "originalColors", "assetTexture", "gpkgColor", "rename", "layerOpacity", "rasterHeight", "removeLayer"]);
+  "lod", "originalColors", "assetTexture", "gpkgColor", "rename", "layerOpacity", "rasterHeight", "removeLayer", "saveValueField"]);

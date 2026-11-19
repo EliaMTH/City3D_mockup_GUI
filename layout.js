@@ -27,9 +27,6 @@ const ICONS = {
   shadeWire:  `<circle cx="12" cy="12" r="8"/><ellipse cx="12" cy="12" rx="3.5" ry="8"/><path d="M4 12h16"/>`,
   shadeVertex:`${DOT(12, 4.5, 1.2)}${DOT(12, 19.5, 1.2)}${DOT(4.5, 12, 1.2)}${DOT(19.5, 12, 1.2)}${DOT(6.7, 6.7, 1.2)}${DOT(17.3, 6.7, 1.2)}${DOT(6.7, 17.3, 1.2)}${DOT(17.3, 17.3, 1.2)}${DOT(12, 12, 1.2)}`,
   annotate:   `<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>`,
-  plusCircle: `<circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>`,
-  minusCircle:`<circle cx="12" cy="12" r="8"/><path d="M8 12h8"/>`,
-  listSearch: `<path d="M4 6h11M4 11h7M4 16h5"/><circle cx="16" cy="15" r="3.5"/><path d="M18.5 17.5L21 20"/>`,
   sliders:    `<path d="M4 6h9M19 6h1M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="16" cy="6" r="2.2"/><circle cx="9" cy="12" r="2.2"/><circle cx="17" cy="18" r="2.2"/>`,
   building:   `<path d="M4 21V8l6-4v17"/><path d="M10 21V10l10 3v8"/><path d="M3 21h18"/><path d="M6.5 10h1M6.5 13h1M6.5 16h1M13 15h1M16.5 16h1"/>`,
   tag:        `<path d="M3 12V4h8l10 10-7 7z"/><circle cx="7.5" cy="8" r="1.4"/>`,
@@ -43,6 +40,9 @@ const ICONS = {
   layers:     `<path d="M12 4l9 5-9 5-9-5z"/><path d="M3 14l9 5 9-5"/>`,
   grid:       `<rect x="4" y="4" width="16" height="16"/><path d="M4 9.3h16M4 14.6h16M9.3 4v16M14.6 4v16"/>`,
   field:      `<rect x="4" y="4" width="16" height="16"/><path d="M4 16c4-6 8 2 16-6"/>`,
+  scalar:     `<rect x="4" y="8" width="16" height="8" rx="1"/><path d="M8 8v8M12 8v8M16 8v8"/>`,
+  hand:       `<path d="M9 12V5a1.5 1.5 0 0 1 3 0v6"/><path d="M12 10.5a1.5 1.5 0 0 1 3 0V12"/><path d="M15 11.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.8a5 5 0 0 1-4.1-2.1L4.8 15.6a1.5 1.5 0 0 1 2.4-1.8L9 16"/>`,
+  database:   `<ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6"/><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/>`,
   globe:      `<circle cx="12" cy="12" r="8"/><ellipse cx="12" cy="12" rx="8" ry="3"/><path d="M12 4v16"/>`,
   eye:        `<path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>`,
   eyeOff:     `<path d="M3 3l18 18"/><path d="M10.6 5.6A9 9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-2.9 3.6M6.8 6.8C4 8.6 2.5 12 2.5 12s3.5 6.5 9.5 6.5a9 9 0 0 0 4.4-1.1"/>`,
@@ -56,9 +56,6 @@ function icon(name, size = 16) {
   return `<svg class="ic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ""}</svg>`;
 }
 
-/* ---------- azioni aggiunte dalla nuova disposizione ---------- */
-ACTIONS.membership_add = { t: "Aggiungi la selezione alla membership", dlg: "membershipAdd" };
-ACTIONS.membership_remove = { t: "Rimuovi la selezione dalla membership", dlg: "membershipRemove" };
 
 /* ---------- pulsantiera in alto: solo apertura, importazione, esportazione ---------- */
 const TOP_TOOLBAR = [
@@ -88,7 +85,8 @@ const VIEWPORT_TOOLBAR = [
   [{ seg: [["view_top", "Alto"], ["view_ne", "NE"], ["view_south", "S"], ["view_west", "O"]] },
    ["fit_scene", "fitScene"], ["fit_selection", "fitSel"], ["default_view", "home"], SEP,
    { radio: [["draw_solid", "shadeSolid"], ["draw_wire", "shadeWire"], ["draw_vertex", "shadeVertex"]] }],
-  [["new_annotation", "annotate"], ["membership_add", "plusCircle"], ["membership_remove", "minusCircle"], ["sel_annotations", "listSearch"]],
+  [["new_annotation", "annotate"]], // §3.6: un solo pulsante per annotare la selezione
+  [["query_mouse", "hand"]], // §3.7: Interroga, in fondo alla pulsantiera
 ];
 
 /* ---------- striscia dei pannelli (stile Blender) ---------- */
@@ -97,6 +95,7 @@ const PANELS = [
   { id: "cityobject", t: "CityObject",          icon: "building" },
   { id: "annotation", t: "Annotazione",         icon: "tag" },
   { id: "lasso",      t: "Risultati lazo",      icon: "lassoList" },
+  { id: "usap",       t: "Annotazioni USAP",    icon: "database" }, // §11: pannello fisso
   { id: "map",        t: "Mappa 2D",            icon: "map" },
   { id: "concepts",   t: "Concetti semantici",  icon: "hierarchy" },
   { id: "log",        t: "Log",                 icon: "terminal", bottom: true },
@@ -106,4 +105,4 @@ const PANELS = [
  * della striscia; quelle senza pannello nel mockup lo dicono nel Log. */
 const DOCK_TO_PANEL = { "dock-props": "props", "dock-info": "cityobject", "dock-log": "log", "dock-map": "map" };
 
-const TREE_ICON = { project: "folder", mesh: "mesh", cloud: "cloud", gis: "layers", citygml: "building", raster: "grid", field: "field", spherical: "globe" };
+const TREE_ICON = { project: "folder", mesh: "mesh", cloud: "cloud", gis: "layers", citygml: "building", raster: "grid", field: "field", spherical: "globe", scalar: "scalar" };

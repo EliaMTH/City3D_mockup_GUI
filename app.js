@@ -9,6 +9,7 @@
   /* ================= stato delle azioni (condiviso fra menu e pulsantiere) ================= */
   const STATE = {};
   for (const [id, a] of Object.entries(ACTIONS)) if (a.chk !== undefined && !a.dock) STATE[id] = a.chk;
+  let pendingAnnotation = false; // §3.6: lazo armato da «Annotazioni della selezione»
 
   function setChecked(id, on) {
     const a = ACTIONS[id];
@@ -17,6 +18,7 @@
     $$("[data-action]").forEach((el) => el.classList.toggle("checked", !!STATE[el.dataset.action]));
     $("#viewport").classList.toggle("lasso", !!(STATE.lasso || STATE.lasso_line));
     $("#vp-toolbar").classList.toggle("lasso-on", !!(STATE.lasso || STATE.lasso_line));
+    if (!STATE.lasso) pendingAnnotation = false;
   }
 
   const cleanTitle = (t) => String(t).replace(/\s*(\.\.\.|…)\s*$/, "");
@@ -33,6 +35,7 @@
       return p ? selectPanel(p) : addLog("warn", `«${a.t}»: pannello non presente in questo mockup.`);
     }
     if ((id === "lasso" || id === "lasso_line") && !STATE[id] && !lassoAllowed(id)) return;
+    if (id === "query_mouse" && !STATE[id] && !queryAllowed()) return;
     if (a.chk !== undefined) {
       const turnOff = a.group && STATE[id] && a.group !== "selmode" && a.group !== "draw";
       setChecked(id, a.group ? !turnOff : !STATE[id]);
@@ -41,19 +44,18 @@
       return;
     }
     if (id === "new_annotation") {
+      // §3.6: con una selezione apre la finestra su quella; senza, arma il lazo e la apre quando il lazo si chiude
       const asset = assetOf(selectedRow) || TREE.find((n) => n.id === "m1");
-      const what = asset.kind === "cloud" ? "punti" : "facce";
+      if (SELECTION[asset.id].count) return openDialog("selectionAnnotations", null, { title: cleanTitle(a.t) });
+      if (assetOf(selectedRow) !== asset) selectRow(asset.id);
       setChecked("lasso", true);
-      addLog("info", `Nuova annotazione: disegna il lazo sull'asset '${asset.name}' (clic destro sul primo vertice, doppio clic per chiudere).`);
-      setTimeout(() => {
-        setChecked("lasso", false);
-        addLog("info", `Lazo chiuso: ${asset.kind === "cloud" ? "3.241" : "29.008"} ${what} selezionat${what === "punti" ? "i" : "e"}.`);
-        openDialog("newAnnotation", null, { title: "Nuova annotazione" });
-      }, 900);
+      pendingAnnotation = true;
+      addLog("info", `Annotazioni della selezione: disegna il lazo su '${asset.name}'; quando lo chiudi si apre la finestra.`);
       return;
     }
     if (id === "clear_selection") { setSelection(assetOf(selectedRow) || TREE.find((n) => n.id === "m1"), 0); return addLog("info", "Selezione annullata."); }
     if (a.run === "tour") return startTour();
+    if (a.tabGo) return selectPanel({ "info-lasso": "lasso" }[a.tabGo] || "cityobject");
     if (a.dlg) return openDialog(a.dlg, null, { title: cleanTitle(a.t) });
     if (a.log !== undefined) addLog("info", a.log || `${a.t}.`);
   }
@@ -65,6 +67,9 @@
     if (id === "lasso_line" && asset.kind !== "mesh") { hint("Il lazo sugli spigoli lavora solo sulle mesh."); return false; }
     return true;
   }
+  /* §3.7: Interroga legge le proprietà degli elementi di un layer GIS (nella release anche dei set .ant) */
+  const queryAllowed = () => TREE.find((x) => x.id === selectedRow).kind === "gis" ||
+    (hint("Interroga legge le proprietà degli elementi di un layer GIS: selezionane uno nell'albero."), false);
   function lassoMessage() {
     const asset = assetOf(selectedRow);
     return asset.kind === "cloud"
@@ -80,6 +85,12 @@
     const lineOk = asset && asset.kind === "mesh";
     line.classList.toggle("dis", !lineOk);
     line.dataset.tip = "Selezione a lazo (spigoli)\nPolilinea sugli spigoli della mesh." + (lineOk ? "" : "\nNon disponibile: seleziona una mesh.");
+    const query = $('[data-action="query_mouse"]'), gis = TREE.find((x) => x.id === selectedRow).kind === "gis";
+    if (query) {
+      query.classList.toggle("dis", !gis);
+      query.dataset.tip = ACTIONS.query_mouse.t + "\n" + ACTIONS.query_mouse.tip + (gis ? "" : "\nNon disponibile: seleziona un layer GIS.");
+    }
+    if (!gis && STATE.query_mouse) setChecked("query_mouse", false);
     if (!asset && STATE.lasso) setChecked("lasso", false);
     if (!lineOk && STATE.lasso_line) setChecked("lasso_line", false);
   }
@@ -388,13 +399,14 @@
 
   /* ================= albero dei progetti ================= */
   const KIND_LABEL = { project: "Progetto", mesh: "Dataset 3D — mesh", cloud: "Dataset 3D — nuvola di punti", gis: "Layer GIS",
-    citygml: "Geometria CityGML", raster: "Layer raster", field: "Layer raster — campo NetCDF", spherical: "Immagini sferiche" };
-  const ACTIONS_KEY = { project: "project", mesh: "dataset", cloud: LAYER_ACTIONS.cloud ? "cloud" : "dataset", gis: "gis", citygml: "citygml", raster: "raster", field: "raster", spherical: "spherical" };
+    citygml: "Geometria CityGML", raster: "Layer raster", field: "Layer raster — campo NetCDF", spherical: "Immagini sferiche", scalar: "Campo scalare" };
+  const ACTIONS_KEY = { project: "project", mesh: "dataset", cloud: LAYER_ACTIONS.cloud ? "cloud" : "dataset", gis: "gis", citygml: "citygml", raster: "raster", field: "raster", spherical: "spherical", scalar: "scalar" };
   const TREE = [
     { id: "p", kind: "project", name: "catania_demo", depth: 0, vis: true, kids: true },
     { id: "m1", kind: "mesh", name: "catania.obj", asset: true, crs: "EPSG:25833", color: "#969696", depth: 1, vis: true, kids: true },
     { id: "g1", kind: "gis", name: "impronte_edifici_centro.geojson", crs: "EPSG:25833", color: "#e8e8e8", depth: 2, vis: true },
     { id: "g2", kind: "gis", name: "edifici_nord.shp", crs: "EPSG:25833", color: "#d62728", depth: 2, vis: false },
+    { id: "f1", kind: "scalar", name: "catania_shadow_20261116_115940.txt", depth: 2, vis: false },
     { id: "m2", kind: "cloud", name: "catania.las", asset: true, crs: "EPSG:25833", color: "#7f7f7f", depth: 1, vis: true },
     { id: "c1", kind: "citygml", name: "catania.gml", crs: "EPSG:25833", depth: 1, vis: true },
     { id: "r1", kind: "raster", name: "DTM_Catania_166.tif", crs: "EPSG:25833", depth: 1, vis: true },
@@ -408,7 +420,9 @@
          ["Estensione", "x: 505.912 – 508.324\ny: 4.150.881 – 4.152.915\nz: 0 – 61"], ["Aspetto", "colore uniforme #969696"], ["Opacità", "1,00"],
          ["Asset USAP", "riconosciuto per hash in catania.usap.gpkg (id 3)"], ["Dimensione", "7,5 MB"], ["Modificato", "16/11/26 11:36"]],
     m2: [["File", "geometry/pointcloud/catania.las"], ["CRS", "EPSG:25833"], ["Punti", "3.907.888 (1.953.944 caricati, 1 ogni 2)"],
-         ["Dimensione dei punti", "5 px"], ["Aspetto", "colori originali (RGB)"], ["Dimensione", "127 MB"]],
+         ["Dimensione dei punti", "5 px"], ["Aspetto", "colori del file (RGB)"], ["Dimensione", "127 MB"]],
+    f1: [["File", "geometry/mesh/catania_shadow_20261116_115940.txt"], ["Dataset", "catania.obj"], ["Valori", "84.133, uno per vertice"],
+         ["Intervallo dei valori", "0 – 1"], ["Mostrato come", "scala di grigi sull'asset, con la barra dei colori"]],
     g1: [["File", DATA + "/gis/impronte_edifici_centro.geojson"], ["CRS", "EPSG:25833"], ["Poligoni", "2.418"], ["Opacità", "0,90"]],
     g2: [["File", DATA + "/gis/edifici_nord.shp"], ["CRS", "EPSG:25833"], ["Poligoni", "1.102"]],
     c1: [["File", DATA + "/catania.gml"], ["CityGML", "3.0 — 51.702 city object"], ["CRS", "EPSG:25833"], ["Livello di dettaglio", "LOD1"], ["Poligoni", "73.725"], ["Opacità", "1,00"]],
@@ -459,6 +473,25 @@
     return null;
   }
 
+  /* §10: aspetto dell'asset, tre modi esclusivi; spenti quelli che il file non ha */
+  const APPEARANCE = { m1: "uniform", m2: "file" };
+  const APPEAR_AVAIL = { m1: { uniform: true, file: true, texture: false }, m2: { uniform: true, file: true } };
+  const APPEAR_LABEL = { uniform: "Colore uniforme", file: "Colori del file", texture: "Texture" };
+  function appearanceOptions(n) {
+    return Object.keys(APPEAR_LABEL).filter((k) => k in APPEAR_AVAIL[n.id]).map((k) => {
+      const why = k === "file" ? `Il file di '${n.name}' non ha colori per vertice.`
+        : `'${n.name}' non ha texture: ce l'hanno solo i file OBJ il cui .mtl indica un'immagine che si trova accanto al file.`;
+      return { k, label: APPEAR_LABEL[k], on: APPEARANCE[n.id] === k, ok: APPEAR_AVAIL[n.id][k], why };
+    });
+  }
+  function setAppearance(n, o) {
+    if (!o.ok) return hint(o.why);
+    APPEARANCE[n.id] = o.k;
+    const row = FIELDS[n.id].find(([k]) => k === "Aspetto");
+    row[1] = o.k === "uniform" ? `colore uniforme ${n.color}` : o.k === "file" ? "colori del file" : "texture";
+    addLog("info", `Aspetto di '${n.name}': ${o.label.toLowerCase()}.`);
+    renderProps();
+  }
   function layerAction(n, act) {
     const [label, target] = act;
     if (label === "Nascondi" || label === "Mostra") { n.vis = !n.vis; renderTree(); renderProps(); return; }
@@ -476,6 +509,20 @@
       <tbody>${[["Visibile", n.vis ? "sì" : "no"], ...(FIELDS[n.id] || [])].map(([k, v]) => `<tr><td>${k}</td><td style="white-space:pre">${esc(v)}</td></tr>`).join("")}</tbody></table></div>`;
     const wrap = $(".lp-actions", box);
     LAYER_ACTIONS[ACTIONS_KEY[n.kind]].forEach((act) => {
+      if (act[1] === "@appearance") {
+        const line = document.createElement("div");
+        line.className = "lp-appear";
+        line.innerHTML = `<span class="lp-appear-t">Aspetto</span><span class="lp-seg"></span>`;
+        for (const o of appearanceOptions(n)) {
+          const b = document.createElement("button");
+          b.className = "btn sm" + (o.on ? " checked" : "") + (o.ok ? "" : " dis");
+          b.textContent = o.label;
+          if (!o.ok) b.dataset.tip = o.why;
+          b.addEventListener("click", () => setAppearance(n, o));
+          $(".lp-seg", line).appendChild(b);
+        }
+        return wrap.appendChild(line);
+      }
       const b = document.createElement("button");
       b.className = "btn sm";
       b.textContent = act[0] === "Nascondi" && !n.vis ? "Mostra" : act[0];
@@ -502,7 +549,13 @@
   }
   /* Lazo finto: con il lazo attivo, un clic nella vista chiude un lazo e applica il modo scelto. */
   $("#viewport").addEventListener("click", (e) => {
-    if (!(STATE.lasso || STATE.lasso_line) || e.target.closest("#vp-toolbar, #gizmo, #vp-hl, #vp-stats")) return;
+    if (e.target.closest("#vp-toolbar, #gizmo, #vp-hl, #vp-stats")) return;
+    if (STATE.query_mouse) { // §3.7: l'esito va nel pannello; un nuovo clic lo sostituisce
+      const ctx = { layer: TREE.find((x) => x.id === selectedRow).name };
+      if (cmdStack.length && cmdStack.at(-1).id === "gisFeature") return replaceCmd("gisFeature", ctx);
+      return openDialog("gisFeature", ctx, { title: "Elemento GIS" });
+    }
+    if (!(STATE.lasso || STATE.lasso_line)) return;
     const asset = assetOf(selectedRow);
     if (!asset) return;
     const [n, unit] = STATE.lasso_line ? [86, "spigoli"] : asset.kind === "cloud" ? [3241, "punti"] : [12400, "facce"];
@@ -512,12 +565,29 @@
     const how = STATE.sel_additive && same ? "aggiunte" : STATE.sel_subtractive && same ? "tolte" : "nuova selezione";
     setSelection(asset, count, unit);
     addLog("info", `Lazo chiuso su '${asset.name}': ${fmt(n)} ${unit} (${how}). Selezione: ${fmt(count)} ${unit}.`);
+    if (pendingAnnotation) {
+      setChecked("lasso", false); // come nella release: lo strumento si posa prima della finestra (mainwindow.cpp:10388)
+      openDialog("selectionAnnotations", null, { title: "Annotazioni della selezione" });
+    }
   });
   function showContextMenu(x, y, n) {
     closeMenus();
     const m = document.createElement("div");
     m.className = "menu";
     LAYER_ACTIONS[ACTIONS_KEY[n.kind]].forEach((act) => {
+      if (act[1] === "@appearance") {
+        if (m.lastChild && !m.lastChild.classList.contains("sep")) m.appendChild(Object.assign(document.createElement("div"), { className: "sep" }));
+        for (const o of appearanceOptions(n)) {
+          const r = document.createElement("div");
+          r.className = "mi" + (o.ok ? "" : " dis");
+          r.innerHTML = (o.on ? `<span class="check">✔</span>` : "") + `<span>Aspetto: ${esc(o.label.toLowerCase())}</span>`;
+          if (!o.ok) r.dataset.tip = o.why;
+          r.addEventListener("click", (e) => { e.stopPropagation(); if (!o.ok) return; closeMenus(); setAppearance(n, o); });
+          m.appendChild(r);
+        }
+        m.appendChild(Object.assign(document.createElement("div"), { className: "sep" }));
+        return;
+      }
       const r = document.createElement("div");
       r.className = "mi";
       r.innerHTML = `<span>${esc(act[0] === "Nascondi" && !n.vis ? "Mostra" : act[0])}</span>`;
@@ -674,6 +744,7 @@
     $("#lasso-results").innerHTML = concepts.map(([c, list]) => `<tr class="grp"><td>▾ ${c} (${list.length})</td></tr>` +
       list.map(([uid, lab, n, s], i) => `<tr${c === "Building" && i === 0 ? ' class="sel"' : ""} data-panel-go="annotation"><td class="i1">${uid}${lab ? " — " + lab : ""}<br><span class="muted">${n} elementi · ${s} nella selezione · catania.obj</span></td></tr>`).join("")).join("");
     $$("#lasso-results td").forEach((td) => (td.style.height = "auto"));
+    $("#usap-panel").innerHTML = DIALOGS.usapPanel().body; // §11.1: la finestra diventa un pannello fisso (proposta.js)
   }
 
   /* ================= scena 3D finta ================= */

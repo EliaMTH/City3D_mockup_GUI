@@ -55,13 +55,14 @@ const ACTIONS = {
   point_size:       { t: "Dimensione dei punti...", dlg: "pointSize" },
 
   // ---- Dati
-  load_data:        { t: "Carica dati", dis: true, tip: "Non disponibile.",
-                      note: "Voce generica disabilitata accanto ai caricamenti specifici di Geometria e Dati." },
+  load_data:        { t: "Carica dati", dlg: "loadData",
+                      note: "Il nome non dice cosa carica: un file CSV o TXT di valori (uno per faccia o per vertice) che diventa un campo scalare sotto l'asset selezionato. Attiva solo con una mesh o una nuvola selezionata." },
   import_citygml:   { t: "Importa CityGML...", dlg: "importCityGml" },
   open_annotated:   { t: "Apri dataset annotato (CityGML + USAP)...", dlg: "openAnnotated" },
-  sel_annotations:  { t: "Annotazioni della selezione corrente (USAP)...", dlg: "selectionAnnotations", note: NOTE.usapAccessi },
+  // apre il pannello informativo sulla scheda Risultati del lazo (mainwindow.cpp:6881)
+  sel_annotations:  { t: "Annotazioni della selezione corrente (USAP)...", tabGo: "info-lasso", note: NOTE.usapAccessi },
   sel_annotations_edit: { t: "Modifica le annotazioni della selezione (USAP)...", dlg: "selectionAnnotations",
-                      note: "Apre lo stesso dialogo della voce precedente." },
+                      note: "Apre la finestra «Annotazioni della selezione», la stessa che compare alla fine di Nuova annotazione; la voce precedente apre invece il pannello informativo sui Risultati del lazo." },
   save_value_field: { t: "Salva campo di valori in USAP...", dlg: "saveValueField" },
   query_value_fields:{ t: "Interroga campi di valori USAP...", dlg: "queryValueFields" },
   load_raster:      { t: "Carica raster (GeoTIFF, NetCDF)...", dlg: "loadRaster" },
@@ -231,5 +232,6 @@ const LAYER_ACTIONS = {
               ["Livello di dettaglio...", "lod"], ["Rimuovi", "removeLayer"]],
   raster:    [["Nascondi"], ["Inquadra questo layer"], ["Opacità...", "layerOpacity"], ["Altezza...", "rasterHeight"], ["Sposta su"], ["Sposta giù"], ["Rimuovi", "removeLayer"]],
   spherical: [["Nascondi"], ["Inquadra questo layer"], ["Sposta su"], ["Sposta giù"], ["Rimuovi", "removeLayer"]],
+  scalar:    [["Nascondi"], ["Inquadra questo layer"], ["Sposta su"], ["Sposta giù"]], // Kind::ScalarField, layer_info.cpp:69
 };
 let LAYER_ACTIONS_NOTE = "I dataset 3D usano i nomi del menu («Imposta colore geometria»), gli altri layer nomi brevi («Colore...»): stessa azione, etichette diverse.";

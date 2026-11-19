@@ -287,6 +287,9 @@ USAP — Attributi:
   membershipAdd: () => msg("question", "Modifica membership", "Elementi dell'assessment: 142 -> 160. Salvare?", [{ t: "Sì", primary: true, close: true, log: "Membership aggiornata: 160 elementi." }, { t: "No", close: true }]),
   membershipRemove: () => msg("question", "Modifica membership", "Elementi dell'assessment: 160 -> 124. Salvare?", [{ t: "Sì", primary: true, close: true, log: "Membership aggiornata: 124 elementi." }, { t: "No", close: true }]),
   assetHash: () => msg("info", "Hash del contenuto dell'asset", "catania.obj<br>SHA-256: 522e4b23a3f9a13775bb562cc777cac3404d584d95b1830234cc2be5e1d44c87<br>Corrisponde all'asset registrato nel pacchetto (id 3)."),
+  // clic con «Interroga/modifica con il mouse» su un layer GIS (genericvtkwidget.cpp:4393)
+  gisFeature: (ctx = {}) => msg("info", "Elemento GIS", `Proprietà dell'elemento GIS (Poligono) di ${ctx.layer || "impronte_edifici_centro.geojson"}:<br><br>` +
+    "id: 1182<br>building: yes<br>height: 14.5<br>name: Palazzo degli Elefanti<br>osm_id: 129894441"),
   saveValueField: () => ({
     title: "Salva campo di valori in USAP", w: 600,
     body: H.form(
@@ -313,6 +316,18 @@ USAP — Attributi:
         <div class="btnrow left"><button class="btn" data-log="ShadowFraction > 0,5: 47.024 su 84.133 vertici.">Esegui interrogazione</button><button class="btn" data-log="47.024 vertici evidenziati nella vista 3D.">Evidenzia nella vista 3D</button><button class="btn">Togli evidenziazione</button></div>
         <div>ShadowFraction &gt; 0,5: <b>47.024</b> su 84.133 vertici</div>`)}`,
     foot: CLOSE,
+  }),
+  // Dati › Carica dati: valori sull'asset selezionato (mainwindow.cpp:9258, importtextdialog)
+  loadData: () => fileDlg({ title: "Carica dati", filter: ["Valori (*.csv *.txt)", "Tutti i file (*)"],
+    files: [["catania_shadow_20261116_115940.txt", "1,1 MB", "File txt"], ["quote_tetti.csv", "1,4 MB", "File csv"]], name: "quote_tetti.csv", next: "importText" }),
+  importText: () => ({
+    title: "Importa valori da testo", w: 560,
+    body: `<div class="muted">${DATA}/quote_tetti.csv</div>
+      ${H.form(H.row("Separatore:", H.select([";", ",", "(spazio)", "(tab)"], ";", 120)), H.row("Salta n righe:", H.num("1")),
+        H.row("Attributo:", H.select(["quota_gronda", "quota_colmo"], "quota_colmo", 200)))}
+      ${H.table(["vertice", "quota_gronda", "quota_colmo"], [["1", "12,40", "15,10"], ["2", "12,40", "15,10"], ["3", "9,85", "11,20"]], { h: 90 })}
+      <div class="muted">I valori devono essere tanti quante le facce o quanti i vertici dell'asset, altrimenti il file è rifiutato.</div>`,
+    foot: [{ t: "OK", primary: true, close: true, log: "Campo scalare 'quote_tetti.csv' aggiunto sotto 'catania.obj': 84.133 valori, uno per vertice." }, { t: "Annulla", close: true }],
   }),
   loadRaster: () => fileDlg({ title: "Carica raster (GeoTIFF, NetCDF)", filter: ["Raster (*.tif *.tiff *.nc)", "GeoTIFF (*.tif *.tiff)", "NetCDF (*.nc)"],
     files: [["DTM_Catania_166.tif", "4,1 MB", "File tif"], ["DTM_Catania_167.tif", "26 MB", "File tif"], ["so2_cams3d_catania_2026-10-16.nc", "23 kB", "File nc"], ["so2_catania_S5P_OFFL_L2__SO2____2026…_crop.nc", "63 kB", "File nc"]],
