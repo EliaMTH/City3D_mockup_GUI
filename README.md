@@ -1,8 +1,8 @@
-# Mockup v2 — disposizione stile Blender / Unreal 5
+# Mockup city3D
 
 Prima prova della nuova disposizione dell'interfaccia di City3D. Si apre con un doppio clic
 su `index.html`. Menu e finestre partono da quelli della release attuale (`366fdda`), con le
-modifiche elencate in `../PROPOSTA-UI.md` (raccolte in `proposta.js`).
+modifiche elencate in `PROPOSTA-UI.md` (raccolte in `proposta.js`).
 
 ## Disposizione
 
@@ -38,7 +38,7 @@ finché quello aperto non è concluso. Un passo interno al comando si apre sopra
 chiuso, riporta indietro. Finché il comando è aperto la selezione non cambia (lazo, modalità di
 selezione e riga dell'albero sono bloccati), tranne nei pannelli dei plugin. Restano finestre mobili importa/esporta, progetto, sessione, Preferenze
 e plugin, Info, il visualizzatore a 360° e le finestre di sistema per i file (elenco in
-`proposta.js`, regole in `../PROPOSTA-UI.md` §2).
+`proposta.js`, regole in `PROPOSTA-UI.md` §2).
 
 ## Stile
 
