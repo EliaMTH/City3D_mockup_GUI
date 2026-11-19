@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>City3D — mockup v2 (disposizione stile Blender / Unreal 5)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="mock-bar">
+  <b>Mockup v2</b> · disposizione stile Blender / Unreal 5 · menu della release 366fdda con le modifiche di PROPOSTA-UI.md · comandi nel pannello a destra · dati fantoccio
+  <label><input type="checkbox" id="review-toggle"> Note di revisione</label>
+</div>
+
+<div id="app">
+  <!-- barra del titolo -->
+  <div class="titlebar">
+    <span class="app-ico" id="app-ico"></span>
+    <span class="title">City3D</span>
+    <span class="winbtns"><i>—</i><i>▢</i><i class="x">✕</i></span>
+  </div>
+
+  <!-- menu + progetto e CRS -->
+  <div id="menubar-row">
+    <nav id="menubar"></nav>
+    <div id="project-chip">
+      <span class="pname" data-select-row="p" data-tip="Progetto attivo: un clic lo seleziona nell'albero e ne mostra le proprietà">catania_demo</span>
+      <span class="dash">—</span>
+      <span class="crs" data-dlg="projectCrs" data-tip="CRS del progetto: un clic per cambiarlo">EPSG:25833</span>
+    </div>
+  </div>
+
+  <!-- pulsantiera: apertura, importazione, esportazione -->
+  <div id="top-toolbar"></div>
+
+  <div id="main">
+    <!-- vista 3D -->
+    <section id="viewport-area">
+      <div id="viewport">
+        <svg id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="vp-toolbar"></div>
+        <div id="gizmo"></div>
+        <div id="vp-stats"></div>
+        <!-- evidenziazione lasciata da un plugin: compare solo quando c'è (PROPOSTA-UI.md §3.4) -->
+        <div id="vp-hl" class="hidden"><span class="hl-dot"></span><span id="vp-hl-text"></span><span class="hl-x" data-tip="Togli evidenziazione">✕</span></div>
+      </div>
+    </section>
+
+    <div class="splitter-v"></div>
+
+    <!-- colonna destra -->
+    <aside id="side">
+      <section id="outliner">
+        <header class="ptitle">PROGETTI</header>
+        <div id="tree"></div>
+      </section>
+      <div class="splitter-h"></div>
+      <section id="props-area">
+        <nav id="strip"></nav>
+        <div id="panel-host">
+
+          <!-- Proprietà del layer -->
+          <div class="panel" data-panel="props">
+            <header class="ptitle">PROPRIETÀ DEL LAYER</header>
+            <div class="pbody" id="layer-props"></div>
+          </div>
+
+          <!-- CityObject -->
+          <div class="panel" data-panel="cityobject">
+            <header class="ptitle">CITYOBJECT</header>
+            <div class="pbody">
+              <div class="caption">CityGML 3.0 — 51702 city object<br><span class="muted">USAP: 51702 oggetti collegati, 47666 annotazioni collegate, 0 problemi</span></div>
+              <input class="line" placeholder="Cerca per GML ID o nome...">
+              <div class="table-wrap" style="height:170px">
+                <table class="grid" id="co-tree"><thead><tr><th>Tipo</th><th>GML ID</th><th>USAP</th></tr></thead><tbody></tbody></table>
+              </div>
+              <div class="section-title">Attributi CityGML
+                <span class="right"><label class="chk"><input type="checkbox" checked> Nascondi vuoti</label>
+                <button class="btn sm" data-dlg="genericAttribute">Attributo generico...</button></span></div>
+              <div class="table-wrap">
+                <table class="grid">
+                  <thead><tr><th>Attributo</th><th>Tipo</th><th>Valore</th></tr></thead>
+                  <tbody>
+                    <tr><td>gml:name</td><td>Testo</td><td>Teatro Greco Romano</td></tr>
+                    <tr data-dlg="structuredProperty"><td>con:height</td><td>Strutturato (Height)</td><td>25.44 m</td></tr>
+                    <tr data-dlg="structuredProperty"><td>core:area</td><td>Strutturato (QualifiedArea)</td><td>1 820.5 m²</td></tr>
+                    <tr><td>bldg:roofType</td><td>Codice (RoofTypeValue)</td><td>1000 — flat roof</td></tr>
+                    <tr><td>osm_building</td><td>Attributo generico</td><td>ruins</td></tr>
+                    <tr class="empty"><td><i>bldg:storeysAboveGround</i></td><td>Intero</td><td></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="section-title">Annotazioni USAP</div>
+              <div class="table-wrap">
+                <table class="grid">
+                  <thead><tr><th>Uid</th><th>Etichetta</th><th>Classe</th><th>Stato</th><th>Conf.</th></tr></thead>
+                  <tbody><tr class="sel" data-panel-go="annotation"><td>ann_bldg_w29315736</td><td>Teatro Greco Romano</td><td>Building</td><td>draft</td><td>0,90</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Annotazione -->
+          <div class="panel" data-panel="annotation">
+            <header class="ptitle">ANNOTAZIONE</header>
+            <div class="pbody">
+              <details open><summary>USAP — annotazione</summary>
+                <div class="kv"><span>Uid</span><span>ann_bldg_w29315736 (id 33718)</span></div>
+                <div class="kv"><span>Concetto</span><span>Building</span></div>
+                <div class="kv"><span>Etichetta</span><span>Teatro Greco Romano</span></div>
+                <div class="kv"><span>Stato</span><span>draft</span></div>
+                <div class="kv"><span>Confidenza</span><span>0,90</span></div>
+                <div class="btnrow"><button class="btn" data-dlg="annotationMetadata">Modifica metadati...</button><button class="btn" data-dlg="deleteAnnotation">Elimina...</button></div>
+              </details>
+              <details open><summary>USAP — attributi (2)</summary>
+                <div class="kv"><span>derivation</span><span>catania-pipeline-v1</span></div>
+                <div class="kv"><span>source</span><span>OSM 2026-09</span></div>
+              </details>
+              <details open><summary>USAP — assessment (3)</summary>
+                <div class="table-wrap"><table class="grid"><thead><tr><th>Data</th><th>Asset 3D</th><th>Elem.</th><th>Stato</th></tr></thead>
+                  <tbody>
+                    <tr class="sel"><td>(senza data)</td><td>catania.obj</td><td>124</td><td>draft</td></tr>
+                    <tr><td>(senza data)</td><td>catania.las</td><td>3241</td><td>draft</td></tr>
+                    <tr><td>2026-11-16</td><td>catania.obj</td><td>36</td><td>draft</td></tr>
+                  </tbody></table></div>
+                <div class="btnrow"><button class="btn" data-dlg="newAssessment">Nuovo assessment...</button><button class="btn" data-dlg="editAssessment">Modifica...</button><button class="btn" data-dlg="editElements">Modifica elementi...</button></div>
+              </details>
+              <details><summary>USAP — metadati generali</summary>
+                <div class="kv"><span>Creato</span><span>2026-10-02 14:11</span></div>
+                <div class="kv"><span>Ultima modifica</span><span>2026-11-16 12:03</span></div>
+              </details>
+              <details open><summary>CityGML — CityObject associato</summary>
+                <div class="kv"><span>Building</span><span>bldg_w29315736 (Teatro Greco Romano)</span></div>
+                <div class="btnrow"><button class="btn" data-panel-go="cityobject">Mostra CityObject</button></div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Risultati lazo -->
+          <div class="panel" data-panel="lasso">
+            <header class="ptitle">RISULTATI LAZO</header>
+            <div class="pbody">
+              <div class="kv"><span>Asset 3D</span><span>catania.obj</span></div>
+              <div class="kv"><span>Elementi selezionati</span><span>29.008 facce</span></div>
+              <div class="btnrow"><button class="btn primary" data-log="Ricerca nel pacchetto: 8 annotazioni trovate.">Cerca in USAP</button>
+                <label class="chk" style="margin-left:auto"><input type="checkbox" checked> Sintesi per concetto</label></div>
+              <div class="section-title">Risultati (annotazioni trovate: 8)</div>
+              <div class="table-wrap grow"><table class="grid"><tbody id="lasso-results"></tbody></table></div>
+            </div>
+          </div>
+
+          <!-- Mappa 2D -->
+          <div class="panel" data-panel="map">
+            <header class="ptitle">MAPPA 2D</header>
+            <div class="pbody">
+              <svg viewBox="0 0 200 200" class="minimap">
+                <rect width="200" height="200" fill="#e9e5dc"/>
+                <path d="M150 0 C140 60 160 110 135 200 L200 200 L200 0 Z" fill="#a9cfdc"/>
+                <g stroke="#fff" stroke-width="3" fill="none"><path d="M0 40 L150 70"/><path d="M20 0 L60 200"/><path d="M0 130 L140 120"/><path d="M100 0 L95 200"/></g>
+                <g stroke="#f2b39c" stroke-width="2" fill="none"><path d="M0 90 L150 100"/><path d="M70 0 L80 200"/></g>
+                <g fill="#cfe3bd"><rect x="10" y="150" width="30" height="25"/><rect x="40" y="10" width="20" height="18"/></g>
+                <rect x="55" y="55" width="70" height="60" fill="#d9d0c9"/>
+                <rect x="48" y="55" width="57" height="57" fill="none" stroke="#4a78c2" stroke-width="1" stroke-dasharray="4 2"/>
+                <rect x="105" y="55" width="57" height="57" fill="none" stroke="#4a78c2" stroke-width="1" stroke-dasharray="4 2"/>
+                <text x="51" y="63" font-size="6" fill="#4a78c2">DTM_Catania_166</text><text x="108" y="63" font-size="6" fill="#4a78c2">DTM_Catania_167</text>
+                <rect x="74" y="88" width="50" height="40" fill="rgba(255,140,0,.18)" stroke="#ff8c00" stroke-width="1.4"/>
+                <text x="77" y="97" font-size="7" fill="#a85a00">catania.obj</text>
+                <rect x="82" y="94" width="30" height="24" fill="none" stroke="#3a6ea5" stroke-width="2"/>
+              </svg>
+              <div class="muted">In arancione l'impronta dei dataset, in blu l'area inquadrata dalla vista 3D. Un clic sulla mappa sposta la vista.</div>
+            </div>
+          </div>
+
+          <!-- Concetti semantici -->
+          <div class="panel" data-panel="concepts">
+            <header class="ptitle">CONCETTI SEMANTICI</header>
+            <div class="pbody">
+              <label class="chk"><input type="checkbox"> Mostra i concetti a 0</label>
+              <div class="table-wrap grow">
+                <table class="grid">
+                  <thead><tr><th>Concetto</th><th>Istanze</th></tr></thead>
+                  <tbody>
+                    <tr class="grp"><td>▾ CityGML</td><td></td></tr>
+                    <tr><td class="i1">Building</td><td>4036</td></tr>
+                    <tr><td class="i1">BuildingPart</td><td>12</td></tr>
+                    <tr><td class="i1">GroundSurface</td><td>4036</td></tr>
+                    <tr><td class="i1">RoofSurface</td><td>18 214</td></tr>
+                    <tr><td class="i1">WallSurface</td><td>25 403</td></tr>
+                    <tr><td class="i1">ReliefFeature</td><td>1</td></tr>
+                    <tr class="grp"><td>▾ sconosciuti</td><td></td></tr>
+                    <tr><td class="i1">gen:GenericCityObject</td><td>0</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Log -->
+          <div class="panel" data-panel="log">
+            <header class="ptitle">LOG</header>
+            <div class="pbody">
+              <div class="logbar">
+                <select id="log-level"><option>Tutti i messaggi</option><option>Avvisi ed errori</option><option>Solo errori</option></select>
+                <input class="line grow" placeholder="Filtra i messaggi...">
+              </div>
+              <div class="logbar"><button class="btn sm" data-log="Log copiato negli appunti.">Copia</button><button class="btn sm" data-dlg="saveLog">Salva...</button><button class="btn sm" data-clear-log>Cancella</button></div>
+              <div class="table-wrap grow" id="log-wrap">
+                <table class="grid" id="log-table"><thead><tr><th style="width:58px">Ora</th><th style="width:22px"></th><th>Messaggio</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- una riga di log: un clic apre il pannello Log -->
+  <footer id="logline">
+    <span id="logline-msg" data-panel-go="log" data-tip="Ultimo messaggio: un clic apre il pannello Log"></span>
+    <span id="logline-warn" class="counter" data-panel-go="log" data-level="1"></span>
+    <span id="logline-err" class="counter" data-panel-go="log" data-level="2"></span>
+    <span class="logos">
+      <img src="assets/logos/01-POC.png" alt=""><img src="assets/logos/02-PON-Metro.png" alt=""><img src="assets/logos/03-Comune-di-Catania.png" alt=""><img class="invert" src="assets/logos/04-CNR.png" alt=""><img src="assets/logos/05-ACT.png" alt="">
+    </span>
+  </footer>
+</div>
+
+<div id="windows"></div>
+<div id="popup-layer"></div>
+<div id="tooltip"></div>
+
+<script src="menus.js"></script>
+<script src="dialogs.js"></script>
+<script src="layout.js"></script>
+<script src="proposta.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
