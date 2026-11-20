@@ -9,7 +9,6 @@
 
 <div id="mock-bar">
   Mockup City3D - dati sintetici
-  <label><input type="checkbox" id="review-toggle"> Note di revisione</label>
 </div>
 
 <div id="app">
@@ -24,9 +23,9 @@
   <div id="menubar-row">
     <nav id="menubar"></nav>
     <div id="project-chip">
-      <span class="pname" data-select-row="p" data-tip="Progetto attivo: un clic lo seleziona nell'albero e ne mostra le proprietà">catania_demo</span>
+      <span class="pname" data-tip="Progetto attivo">catania_demo</span>
       <span class="dash">—</span>
-      <span class="crs" data-dlg="projectCrs" data-tip="CRS del progetto: un clic per cambiarlo">EPSG:25833</span>
+      <span class="crs" data-tip="CRS del progetto: si cambia con «Imposta CRS…» nel tasto destro sulla riga del progetto">EPSG:25833</span>
     </div>
   </div>
 
@@ -41,8 +40,8 @@
         <div id="vp-toolbar"></div>
         <div id="gizmo"></div>
         <div id="vp-stats"></div>
-        <!-- evidenziazione lasciata da un plugin: compare solo quando c'è (PROPOSTA-UI.md §3.4) -->
-        <div id="vp-hl" class="hidden"><span class="hl-dot"></span><span id="vp-hl-text"></span><span class="hl-x" data-tip="Togli evidenziazione">✕</span></div>
+        <!-- evidenziazione lasciata da un plugin: compare solo quando c'è (README › Vista 3D) -->
+        <div id="vp-hl" class="hidden"><span class="hl-dot"></span><span id="vp-hl-text"></span><span class="hl-x" data-tip="Togli evidenziazione dei plugin">✕</span></div>
       </div>
     </section>
 
@@ -75,7 +74,7 @@
                 <table class="grid" id="co-tree"><thead><tr><th>Tipo</th><th>GML ID</th><th>USAP</th></tr></thead><tbody></tbody></table>
               </div>
               <div class="section-title">Attributi CityGML
-                <span class="right"><label class="chk"><input type="checkbox" checked> Nascondi vuoti</label>
+                <span class="right"><label class="chk"><input type="checkbox" checked> Nascondi attributi vuoti</label>
                 <button class="btn sm" data-dlg="genericAttribute">Attributo generico...</button></span></div>
               <div class="table-wrap">
                 <table class="grid">
@@ -117,21 +116,26 @@
                 <div class="kv"><span>source</span><span>OSM 2026-09</span></div>
               </details>
               <details open><summary>USAP — assessment (3)</summary>
-                <div class="table-wrap"><table class="grid"><thead><tr><th>Data</th><th>Asset 3D</th><th>Elem.</th><th>Stato</th></tr></thead>
+                <div class="table-wrap"><table class="grid"><thead><tr><th>Data</th><th>Asset 3D</th><th>Elementi</th><th>Stato</th><th>Uid</th></tr></thead>
                   <tbody>
-                    <tr class="sel"><td>(senza data)</td><td>catania.obj</td><td>124</td><td>draft</td></tr>
-                    <tr><td>(senza data)</td><td>catania.las</td><td>3241</td><td>draft</td></tr>
-                    <tr><td>2026-11-16</td><td>catania.obj</td><td>36</td><td>draft</td></tr>
+                    <tr><td>(senza data)</td><td>catania.obj</td><td>124</td><td>draft</td><td>asm_bldg_w29315736_1</td></tr>
+                    <tr style="color:#8a8a8a"><td>(senza data)</td><td>catania.las</td><td>3241</td><td>draft</td><td>asm_bldg_w29315736_2</td></tr>
+                    <tr class="sel"><td>2026-11-16</td><td>catania.obj</td><td>142</td><td>draft</td><td>asm_bldg_w29315736_3</td></tr>
                   </tbody></table></div>
-                <div class="btnrow"><button class="btn" data-dlg="newAssessment">Nuovo assessment...</button><button class="btn" data-dlg="editAssessment">Modifica...</button><button class="btn" data-dlg="editElements">Modifica elementi...</button></div>
+                <div class="btnrow"><button class="btn" data-dlg="newAssessment">Nuovo assessment...</button><button class="btn" data-dlg="editAssessment">Modifica assessment...</button><button class="btn" data-dlg="editElements">Modifica elementi...</button></div>
+                <div>Assessment asm_bldg_w29315736_3 — data: 2026-11-16, asset 3D: catania.obj, stato: draft, confidenza: 0,90, elementi: 142.<br>Creato: 2026-11-16 12:03&nbsp;&nbsp;&nbsp;Ultima modifica: 2026-11-16 12:03</div>
+                <div class="table-wrap"><table class="grid"><thead><tr><th>Attributo dell'assessment</th><th>Valore</th></tr></thead>
+                  <tbody><tr><td>city3d.note</td><td>Facciata sud rilevata il 16/11</td></tr></tbody></table></div>
               </details>
               <details><summary>USAP — metadati generali</summary>
                 <div class="kv"><span>Creato</span><span>2026-10-02 14:11</span></div>
                 <div class="kv"><span>Ultima modifica</span><span>2026-11-16 12:03</span></div>
               </details>
               <details open><summary>CityGML — CityObject associato</summary>
-                <div class="kv"><span>Building</span><span>bldg_w29315736 (Teatro Greco Romano)</span></div>
-                <div class="btnrow"><button class="btn" data-panel-go="cityobject">Mostra CityObject</button></div>
+                <div class="pathrow"><span style="flex:1;align-self:center">GML ID: bldg_w29315736</span><button class="btn sm" data-panel-go="cityobject">Mostra CityObject</button></div>
+                <div>Classe CityGML: Building</div>
+                <div class="table-wrap"><table class="grid"><thead><tr><th>Attributo</th><th>Valore</th></tr></thead>
+                  <tbody><tr><td>bldg:roofType</td><td>1000</td></tr><tr><td>con:height</td><td>25.44</td></tr><tr><td>core:area</td><td>1820.5</td></tr><tr><td>gml:name</td><td>Teatro Greco Romano</td></tr><tr><td>osm_building</td><td>ruins</td></tr></tbody></table></div>
               </details>
             </div>
           </div>
@@ -140,16 +144,18 @@
           <div class="panel" data-panel="lasso">
             <header class="ptitle">RISULTATI LAZO</header>
             <div class="pbody">
-              <div class="kv"><span>Asset 3D</span><span>catania.obj</span></div>
-              <div class="kv"><span>Elementi selezionati</span><span>29.008 facce</span></div>
-              <div class="btnrow"><button class="btn primary" data-log="Ricerca nel pacchetto: 8 annotazioni trovate.">Cerca in USAP</button>
-                <label class="chk" style="margin-left:auto"><input type="checkbox" checked> Sintesi per concetto</label></div>
-              <div class="section-title">Risultati (annotazioni trovate: 8)</div>
-              <div class="table-wrap grow"><table class="grid"><tbody id="lasso-results"></tbody></table></div>
+              <div class="section-title">Selezione con lazo</div>
+              <div class="lr-sel"><span class="lr-dot" style="background:#2ca02c"></span><span id="lasso-selected"></span></div>
+              <div class="lr-asset">Asset 3D: catania.obj</div>
+              <div class="lr-rule"></div>
+              <div class="section-title">Sintesi per concetto</div>
+              <div class="table-wrap lr-concepts"><table><tbody id="lasso-concepts"></tbody></table></div>
+              <div class="section-title" id="lasso-caption"></div>
+              <div class="table-wrap grow" id="lasso-results"></div>
             </div>
           </div>
 
-          <!-- Annotazioni USAP (PROPOSTA-UI.md §11): pannello fisso -->
+          <!-- Annotazioni USAP (README › Pannelli della striscia): pannello fisso -->
           <div class="panel" data-panel="usap">
             <header class="ptitle">ANNOTAZIONI USAP</header>
             <div class="pbody" id="usap-panel"></div>

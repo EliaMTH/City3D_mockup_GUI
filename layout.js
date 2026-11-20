@@ -1,5 +1,5 @@
-/* City3D — mockup v2: disposizione stile Blender / Unreal 5.
- * menus.js (azioni e menu attuali) e dialogs.js (finestre) sono quelli del primo mockup;
+/* City3D — mockup: disposizione stile Blender / Unreal 5.
+ * menus.js (azioni e menu attuali) e dialogs.js (finestre) sono la fotografia della release;
  * qui ci sono solo le parti nuove: icone, pulsantiere, pannelli. */
 
 /* ---------- icone lineari (viewBox 24x24, tratto = colore del testo) ---------- */
@@ -59,25 +59,26 @@ function icon(name, size = 16) {
 
 /* ---------- pulsantiera in alto: solo apertura, importazione, esportazione ---------- */
 const TOP_TOOLBAR = [
-  { a: "new_project", icon: "filePlus", label: "Nuovo" },
-  { a: "open_project", icon: "folderOpen", label: "Apri" },
-  { a: "save_session", icon: "save", label: "Salva" },
+  { a: "new_project", icon: "filePlus", label: "Nuovo progetto" },
+  { a: "open_project", icon: "folderOpen", label: "Apri progetto" },
+  { a: "save_session", icon: "save", label: "Salva progetto" },
   SEP,
   { drop: "Importa", icon: "import", items: ["load_mesh", "load_cloud", "import_citygml", "open_annotated", "load_raster", "load_gis", "load_spherical", "spherical_list", SEP, "datalake"] },
-  // "spherical_list" (Immagini sferiche…) arriva dal menu Vista: PROPOSTA-UI.md §5
-  // i comandi di esportazione dei plugin in un sottomenu, come File › Esporta › Plugin: PROPOSTA-UI.md §6.3
+  // "spherical_list" (Immagini sferiche…) arriva dal menu Vista: README › Pulsantiera in alto
+  // i comandi di esportazione dei plugin in un sottomenu, come File › Esporta › Plugin: README › Pulsantiera in alto
   { drop: "Esporta", icon: "export", items: ["export_zip", "screenshot", SEP, { t: "Plugin", items: ["plugin_inventory"] }] },
 ];
 
 /* Dopo Esporta, separati da una linea a puntini: i comandi che i plugin agganciano alla barra
  * (superficie «toolbar» del manifest). Testo accanto all'icona, come nella release: un plugin
- * può non avere un'icona propria (qui l'icona generica). PROPOSTA-UI.md §6 */
+ * può non avere un'icona propria (qui l'icona generica). README › Menu Plugin */
 const PLUGIN_TOOLBAR_CMDS = [
   { a: "plugin_assetstats_tb", label: "Statistiche dell'asset", plugin: "Statistiche asset" },
 ];
 
 /* ---------- pulsantiera della vista 3D, su una riga ----------
- * { seg } = viste predefinite; { radio } e { mode } = modi esclusivi, mostrati in grigio (PROPOSTA-UI.md §3) */
+ * { seg } = viste predefinite; { radio } = modo di disegno, combinabile; { mode } = modo del lazo, esclusivo.
+ * Entrambi mostrano la scelta in grigio (README › Vista 3D) */
 const VIEWPORT_TOOLBAR = [
   // strumenti (blu quando attivi), poi il modo del lazo (grigio: non è uno strumento), poi annulla selezione
   [["lasso", "lassoArea"], ["lasso_line", "lassoLine"],
@@ -85,8 +86,8 @@ const VIEWPORT_TOOLBAR = [
   [{ seg: [["view_top", "Alto"], ["view_ne", "NE"], ["view_south", "S"], ["view_west", "O"]] },
    ["fit_scene", "fitScene"], ["fit_selection", "fitSel"], ["default_view", "home"], SEP,
    { radio: [["draw_solid", "shadeSolid"], ["draw_wire", "shadeWire"], ["draw_vertex", "shadeVertex"]] }],
-  [["new_annotation", "annotate"]], // §3.6: un solo pulsante per annotare la selezione
-  [["query_mouse", "hand"]], // §3.7: Interroga, in fondo alla pulsantiera
+  [["new_annotation", "annotate"]], // un solo pulsante per annotare la selezione (README › Vista 3D)
+  [["query_mouse", "hand"]], // Interroga, in fondo alla pulsantiera (README › Vista 3D)
 ];
 
 /* ---------- striscia dei pannelli (stile Blender) ---------- */
@@ -95,7 +96,7 @@ const PANELS = [
   { id: "cityobject", t: "CityObject",          icon: "building" },
   { id: "annotation", t: "Annotazione",         icon: "tag" },
   { id: "lasso",      t: "Risultati lazo",      icon: "lassoList" },
-  { id: "usap",       t: "Annotazioni USAP",    icon: "database" }, // §11: pannello fisso
+  { id: "usap",       t: "Annotazioni USAP",    icon: "database" }, // pannello fisso (README › Pannelli della striscia)
   { id: "map",        t: "Mappa 2D",            icon: "map" },
   { id: "concepts",   t: "Concetti semantici",  icon: "hierarchy" },
   { id: "log",        t: "Log",                 icon: "terminal", bottom: true },

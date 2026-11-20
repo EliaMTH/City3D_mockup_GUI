@@ -139,15 +139,19 @@ const DIALOGS = {
   }),
   openProjectFile: () => fileDlg({ title: "Apri un file di progetto", folder: WORK + "/catania_demo", filter: ["Sessione City3D (*.json)", "Tutti i file (*)"],
     files: [["annotations/"], ["geometry/"], ["project.json", "12,2 kB", "File json"], ["sessione_copia.json", "12,1 kB", "File json"]], name: "project.json" }),
+  // Carica dal datalake (datalake/datalake_dialog.cpp): elenco remoto con Scarica e Seleziona per riga, elenco locale con Carica.
   datalake: () => ({
-    title: "Datalake", w: 640,
-    body: `<div class="muted">Server: https://matera-rest-api.na.icar.cnr.it/</div>
-      <div class="two-col" style="height:220px">
-        <div class="sidebar-list" style="width:160px"><div class="sel">Imati</div><div>Imati_archivio</div></div>
-        <div class="sidebar-list" style="width:160px"><div class="sel">prova_file</div><div>catania_2026</div></div>
-        <div style="flex:1">${H.table(["File", "Dimensione"], [["quartiere_centro.zip", "182 MB"], ["quartiere_nord.zip", "96 MB"], ["dtm_area.zip", "41 MB"]], { h: 220, sel: 1 })}</div>
-      </div>`,
-    foot: [{ t: "Scarica e apri", primary: true, next: "datalakeSettings", close: true }, { t: "Annulla", close: true }],
+    title: "Sfoglia ...", w: 700,
+    body: `${H.group("Datalake", `<div class="pathrow"><input type="text" placeholder="Cerca..." style="flex:1"><button class="btn sm" data-tip="Ricarica dati da remoto">⟳</button></div>
+        ${H.table(["Nome file", "Data", "Ora", "", ""], [
+          ["quartiere_centro.zip", "12/11/26", "10:42", '<button class="btn sm">Scarica</button>', H.check("Seleziona", true)],
+          ["quartiere_nord.zip", "12/11/26", "10:40", '<button class="btn sm">Scarica</button>', H.check("Seleziona", false)],
+          ["dtm_area.zip", "11/11/26", "18:05", '<button class="btn sm">Scarica</button>', H.check("Seleziona", false)]], { h: 120 })}
+        <div class="btnrow left"><button class="btn sm">Seleziona tutto</button><button class="btn sm">Deseleziona tutto</button>
+          <button class="btn sm" data-tip="Scarica tutti gli elementi selezionati">Scarica</button></div>`)}
+      ${H.group("Filesystem", `<input type="text" placeholder="Cerca...">
+        ${H.table(["Nome file", "Ultima modifica", ""], [["quartiere_centro.zip", "12/11/26 10:44", '<button class="btn sm" data-tip="Apri/Visualizza">Carica</button>']], { h: 80 })}`)}`,
+    foot: CLOSE,
   }),
   datalakeSettings: () => ({
     title: "Download dal DataLake - Impostazioni", w: 420,
@@ -212,12 +216,12 @@ const DIALOGS = {
   /* ===== Geometria ===== */
   loadMesh: () => fileDlg({ title: "Carica mesh", filter: ["Mesh (*.obj *.ply *.vtk)", "OBJ (*.obj)", "PLY (*.ply)", "VTK (*.vtk)", "Tutti i file (*)"],
     files: [["catania.obj", "7,5 MB", "File obj"], ["trackD-hires-texture-TEST.obj", "2,4 GB", "File obj"], ["synthetic_city_mesh.ply", "3,1 MB", "File ply"]], name: "catania.obj", next: "meshEpsg" }),
-  meshEpsg: () => epsgDlg("Specifica un EPSG per la mesh.", "25833 (ETRS89 / UTM zone 33N)", "meshCopy"),
+  meshEpsg: () => epsgDlg(null, "25833 (ETRS89 / UTM zone 33N)", "meshCopy"),
   meshCopy: () => ({ title: "Copia", w: 420, body: `<div>Copia di 'catania.obj' nella cartella del progetto...</div><progress value="64" max="100" style="width:100%"></progress>`,
     foot: [{ t: "Annulla", close: true }] }),
   loadCloud: () => fileDlg({ title: "Carica nuvola di punti", filter: ["Nuvole di punti (*.las *.laz *.xyz *.txt *.csv)", "LAS (*.las)", "LAZ (*.laz)", "XYZ (*.xyz)"],
     files: [["catania.las", "127 MB", "File las"], ["Catania1.las", "33,4 GB", "File las"], ["duomo.las", "22,1 GB", "File las"]], name: "catania.las", next: "cloudEpsg" }),
-  cloudEpsg: () => epsgDlg("Specifica un EPSG per la nuvola di punti.", "25833 (ETRS89 / UTM zone 33N)", "cloudQuestion"),
+  cloudEpsg: () => epsgDlg(null, "25833 (ETRS89 / UTM zone 33N)", "cloudQuestion"),
   cloudQuestion: () => ({
     title: "Nuvola di punti grande", w: 500,
     body: `<div class="msg"><div class="mico question">?</div><div>'catania.las' contiene <b>3.907.888 punti</b> (circa 160 MB in memoria).<br>Caricarla tutta, o un punto ogni N?</div></div>
@@ -225,14 +229,17 @@ const DIALOGS = {
     foot: [{ t: "Carica tutto", close: true, log: "catania.las: 3.907.888 punti caricati." }, { t: "Decima", primary: true, close: true, log: "catania.las: 3.907.888 punti (1.953.944 caricati)." }, { t: "Annulla", close: true }],
   }),
   geomColor: () => colorDlg("Seleziona colore", "#969696"),
+  // Opacità di mesh e nuvole: gestore di tutte le geometrie dei progetti aperti (opacity_dialog.cpp, mainwindow.cpp:14002)
   geomOpacity: () => ({
-    title: "Opacità", w: 380,
-    body: `<div>Opacità di 'catania.obj':</div><div class="pathrow"><input type="range" min="0" max="100" value="90" style="flex:1"><span>90 %</span></div>`,
-    foot: OK_CANCEL(),
+    title: "Gestione Opacità Layer Geometrici", w: 600,
+    body: `${H.table(["Layer", "Opacità", "Valore"], [
+        ["catania.obj", '<input type="range" min="0" max="100" value="100" style="width:220px">', "100 %"],
+        ["catania.las", '<input type="range" min="0" max="100" value="100" style="width:220px">', "100 %"]], { h: 130 })}
+      <div class="btnrow left"><button class="btn sm" data-tip="Applica l'opacità del primo layer a tutti i layer">Applica a Tutti</button>
+        <button class="btn sm" data-tip="Imposta l'opacità di tutti i layer al 100%">Ripristina Predefiniti</button></div>`,
+    foot: [{ t: "Applica", primary: true, log: "Opacità applicata ai layer geometrici." }, { t: "Chiudi", close: true }],
   }),
-  geomCrs: () => epsgDlg("Imposta CRS geometria — catania.obj", "25833 (ETRS89 / UTM zone 33N)", "crsConvert"),
-  crsConvert: () => msg("question", "CRS della geometria", "'catania.obj' è in EPSG:25833 e il progetto in EPSG:32633.<br>Convertire la geometria nel CRS del progetto?",
-    [{ t: "Converti", primary: true, close: true }, { t: "Solo assegna", close: true }, { t: "Annulla", close: true }]),
+  geomCrs: () => epsgDlg(null, "25833 (ETRS89 / UTM zone 33N)"), // assegna soltanto: nessuna conversione (mainwindow.cpp:4402-4425)
   removeGeometry: () => msg("question", "Rimuovi geometria", "Rimuovere 'catania.obj' dal progetto?<br><span class='muted'>Il file resta nella cartella del progetto.</span>",
     [{ t: "Sì", primary: true, close: true, log: "Geometria rimossa: catania.obj" }, { t: "No", close: true }]),
   cloudDecimation: () => ({
@@ -245,9 +252,11 @@ const DIALOGS = {
   /* ===== Dati ===== */
   importCityGml: () => fileDlg({ title: "Importa CityGML", filter: ["CityGML e CityJSON (*.gml *.xml *.json)", "Tutti i file (*)"],
     files: [["catania.gml", "61,9 MB", "File gml"], ["UISH_Catania.gml", "717 MB", "File gml"], ["LOD1.city.json", "9,5 MB", "File json"]], name: "catania.gml", next: "citygmlLod" }),
+  // Livello di dettaglio (choose_citygml_lod, mainwindow.cpp:4687): solo i LOD del file, nessuna altra scelta
   citygmlLod: () => ({
-    title: "Livello di dettaglio", w: 380,
-    body: `<div>Livello di dettaglio da disegnare per 'catania.gml':</div>${H.radio("lod", "LOD0 — 4.036 anelli", false)}${H.radio("lod", "LOD1 — 73.725 anelli", true)}${H.radio("lod", "Nessuna geometria (solo oggetti e attributi)", false)}`,
+    title: "Livello di dettaglio CityGML", w: 420,
+    body: `<div>Il file ha geometria a 2 livelli di dettaglio; il viewport ne mostra uno.<br>Livello da mostrare:</div>
+      ${H.select(["LOD0 (4.036 poligoni)", "LOD1 (73.725 poligoni)"], "LOD1 (73.725 poligoni)")}`,
     foot: OK_CANCEL(),
   }),
   lod: () => DIALOGS.citygmlLod(),
@@ -272,22 +281,22 @@ USAP — Attributi:
       <div>1919 annotazioni nella selezione.</div>
       <div class="pathrow"><label style="align-self:center">Concetto:</label>${H.select(["Scegli il concetto", "Building", "BuildingPart", "RoofSurface", "WallSurface", "GroundSurface", "Bridge", "Tunnel", "ReliefFeature", "… (66 classi)"], "Building", 230)}${H.input("", "Etichetta (facoltativa)")}<button class="btn" data-dlg="annotationCreated">Crea dalla selezione</button></div>
       <div class="pathrow"><label style="align-self:center">CityObject:</label>${H.input("bldg_w175894049", "gml:id dell'oggetto CityGML (facoltativo)")}<button class="btn" data-dlg="newCityObject">Nuovo CityObject...</button></div>
-      <div class="btnrow left"><button class="btn" data-dlg="annotationMetadata">Modifica metadati...</button><button class="btn" data-dlg="membershipAdd">Aggiungi selezione alla membership</button><button class="btn" data-dlg="membershipRemove">Rimuovi selezione dalla membership</button><button class="btn" data-dlg="deleteAnnotation">Elimina...</button><button class="btn" data-dlg="assetHash">Hash del contenuto dell'asset...</button></div>`,
+      <div class="btnrow left"><button class="btn" data-dlg="annotationMetadata">Modifica metadati...</button><button class="btn" data-dlg="membershipAdd">Aggiungi selezione alla membership</button><button class="btn" data-dlg="membershipRemove">Rimuovi selezione dalla membership</button><button class="btn" data-dlg="deleteAnnotation">Elimina...</button></div>`,
     foot: CLOSE,
   }),
   annotationCreated: () => msg("info", "Nuova annotazione", "Annotazione 47667 «Building» creata da 29.008 facce di 'catania.obj', collegata a bldg_w175894049."),
   newCityObject: () => ({
     title: "Nuovo CityObject", w: 480,
-    body: H.form(H.row("Classe:", H.select(["Building", "BuildingPart", "RoofSurface", "WallSurface", "GroundSurface", "CityFurniture", "SolitaryVegetationObject"], "BuildingPart")),
-      H.row("gml:id:", H.input("BuildingPart_25ed7801")),
-      H.row("Genitore:", H.select(["(nessuno: oggetto di primo livello)", "bldg_w129917823 — Building"], "bldg_w129917823 — Building")),
-      H.row("gml:name:", H.input("Parte nuova")), H.row("", `<span class="muted">L'oggetto non ha geometria propria: la sua geometria è la selezione dell'annotazione collegata.</span>`)),
+    body: `<div class="muted">Un nuovo oggetto del CityGML. Non ha una geometria propria: la sua geometria è la selezione, tramite l'annotazione collegata.</div>
+      ${H.form(H.row("Genitore", H.input("bldg_w129917823", "gml:id del genitore (vuoto: oggetto di primo livello)")),
+        H.row("Classe", H.select(["Building", "BuildingPart", "RoofSurface", "WallSurface", "GroundSurface", "CityFurniture", "SolitaryVegetationObject"], "BuildingPart")),
+        H.row("gml:id", H.input("BuildingPart_25ed7801")))}
+      <div>Attributi (facoltativi; altri si aggiungono poi nella scheda CityObject):</div>
+      ${H.form(H.row("gml:name", H.input("Parte nuova")))}`,
     foot: OK_CANCEL(),
   }),
-  membershipAdd: () => msg("question", "Modifica membership", "Elementi dell'assessment: 142 -> 160. Salvare?", [{ t: "Sì", primary: true, close: true, log: "Membership aggiornata: 160 elementi." }, { t: "No", close: true }]),
-  membershipRemove: () => msg("question", "Modifica membership", "Elementi dell'assessment: 160 -> 124. Salvare?", [{ t: "Sì", primary: true, close: true, log: "Membership aggiornata: 124 elementi." }, { t: "No", close: true }]),
-  assetHash: () => msg("info", "Hash del contenuto dell'asset", "catania.obj<br>SHA-256: 522e4b23a3f9a13775bb562cc777cac3404d584d95b1830234cc2be5e1d44c87<br>Corrisponde all'asset registrato nel pacchetto (id 3)."),
-  // clic con «Interroga/modifica con il mouse» su un layer GIS (genericvtkwidget.cpp:4393)
+  membershipAdd: () => msg("question", "Membership", "Membership dell'annotazione: 142 -> 160 elementi. Salvare?", [{ t: "Sì", primary: true, close: true, log: "Membership aggiornata: 160 elementi." }, { t: "No", close: true }]),
+  membershipRemove: () => msg("question", "Membership", "Membership dell'annotazione: 160 -> 124 elementi. Salvare?", [{ t: "Sì", primary: true, close: true, log: "Membership aggiornata: 124 elementi." }, { t: "No", close: true }]),
   gisFeature: (ctx = {}) => msg("info", "Elemento GIS", `Proprietà dell'elemento GIS (Poligono) di ${ctx.layer || "impronte_edifici_centro.geojson"}:<br><br>` +
     "id: 1182<br>building: yes<br>height: 14.5<br>name: Palazzo degli Elefanti<br>osm_id: 129894441"),
   saveValueField: () => ({
@@ -311,7 +320,7 @@ USAP — Attributi:
         ["ShadowFraction", "ombre 16/11 12:00", "2026-11-16", "catania.obj", "vertici", "84133", "f4", "0,00", "1,00", "frazione"],
         ["ShadowFraction", "ombre 21/06 09:00", "2026-06-21", "catania.obj", "vertici", "84133", "f4", "0,00", "1,00", "frazione"]], { h: 120, sel: 1 })}
       ${H.group("Predicato sul campo selezionato", `
-        <div class="pathrow">${H.radio("pred", "Confronto:", true)}${H.select([">", "≥", "<", "≤", "="], ">", 60)}${H.num("0,5", "", "", 0.1)}</div>
+        <div class="pathrow">${H.radio("pred", "Confronto:", true)}${H.select(["<", "<=", "==", "!=", ">", ">="], ">", 60)}${H.num("0,5", "", "", 0.1)}</div>
         <div class="pathrow">${H.radio("pred", "Intervallo:", false)}${H.num("0,2", "", "", 0.1)}${H.check("includi min", true)} a ${H.num("0,8", "", "", 0.1)}${H.check("includi max", false)}</div>
         <div class="btnrow left"><button class="btn" data-log="ShadowFraction > 0,5: 47.024 su 84.133 vertici.">Esegui interrogazione</button><button class="btn" data-log="47.024 vertici evidenziati nella vista 3D.">Evidenzia nella vista 3D</button><button class="btn">Togli evidenziazione</button></div>
         <div>ShadowFraction &gt; 0,5: <b>47.024</b> su 84.133 vertici</div>`)}`,
@@ -356,8 +365,8 @@ USAP — Attributi:
     body: `<div class="two-col"><div style="flex:1">${H.form(
         H.row("Geometria", H.select(["Poligoni (2.418)", "Linee (0)", "Punti (0)"], "Poligoni (2.418)")),
         H.row("Attributo", H.select(["(nessuno)", "building", "height", "levels", "name"], "building")),
-        H.row("Modalità", H.select(["Colore unico", "Categorie", "Classi (quantili)", "Classi (intervalli uguali)"], "Categorie")),
-        H.row("N. classi", H.num(5, 2, 12)), H.row("Palette", H.select(["Set3", "Viridis", "Spectral", "Blues"], "Set3")),
+        H.row("Modalità", H.select(["Continuo", "Discreto", "Categorico"], "Categorico")),
+        H.row("N. classi", H.num(5, 2, 12)), H.row("Palette", H.select(["Default", "Jet", "Rainbow", "Viridis", "Plasma", "Inferno", "Cividis", "Greyscale", "Magma", "Turbo", "Category10", "Set1", "Pastel", "Energy"], "Category10")),
         H.row("", H.check("Inverti palette", false)), H.row("", H.check("Mostra barra dei colori", true)),
         H.row("Colore unico", `<button class="btn sm" data-dlg="geomColor">Scegli…</button>`),
         H.row("Opacità poligoni", H.input("0,90", "", 70)), H.row("Opacità linee", H.input("0,50", "", 70)), H.row("Opacità punti", H.input("1,00", "", 70)))}</div>
@@ -395,7 +404,7 @@ USAP — Attributi:
   annotationMetadata: () => ({
     title: "Modifica metadati dell'annotazione", w: 480,
     body: H.form(H.row("Concetto:", H.select(["Building", "BuildingPart", "RoofSurface", "WallSurface"], "Building")),
-      H.row("Etichetta:", H.input("Teatro Greco Romano")), H.row("Stato:", H.select(["draft", "reviewed", "validated", "rejected"], "draft")),
+      H.row("Etichetta:", H.input("Teatro Greco Romano")), H.row("Stato:", H.select(["draft", "accepted", "rejected", "superseded"], "draft")),
       H.row("", H.check("Registra una confidenza", true)), H.row("Confidenza:", H.num("0.90", 0, 1, 0.05)),
       H.row("Metodo:", H.input("", "es. manuale, fotogrammetria, rilievo")), H.row("Fonte:", H.input("", "es. sopralluogo 2026, archivio")),
       H.row("", `<span class="muted">Gli elementi dell'annotazione non cambiano.</span>`)),
@@ -406,7 +415,7 @@ USAP — Attributi:
   newAssessment: () => ({
     title: "Nuovo assessment", w: 480,
     body: H.form(H.row("Data dell'assessment:", `<input type="date" value="2026-11-18">`), H.row("Asset 3D:", H.select(["catania.obj", "catania.las"], "catania.obj")),
-      H.row("Stato:", H.select(["draft", "reviewed", "validated"], "draft")), H.row("", H.check("Registra una confidenza", false)),
+      H.row("Stato:", H.select(["draft", "accepted", "rejected", "superseded"], "draft")), H.row("", H.check("Registra una confidenza", false)),
       H.row("Nota:", H.input("", "Metodo, fonte, osservazioni (facoltativo)")),
       H.row("", H.check("Usa la selezione lazo corrente come elementi di questo assessment", true)),
       H.row("", `<span class="muted">Selezione lazo su 'catania.obj': 36 facce, 41 vertici/punti</span>`)),
@@ -415,7 +424,7 @@ USAP — Attributi:
   editAssessment: () => ({
     title: "Modifica assessment", w: 480,
     body: H.form(H.row("Data dell'assessment:", `<input type="date" value="2026-11-16">`), H.row("Asset 3D (non modificabile):", "catania.obj (id 3)"),
-      H.row("Stato:", H.select(["draft", "reviewed", "validated"], "draft")), H.row("Nota:", H.input("rilievo novembre, lotto 2"))),
+      H.row("Stato:", H.select(["draft", "accepted", "rejected", "superseded"], "draft")), H.row("Nota:", H.input("rilievo novembre, lotto 2"))),
     foot: [{ t: "Salva", primary: true, close: true }, { t: "Annulla", close: true }],
   }),
   editElements: () => msg("question", "Modifica elementi", "Assessment del 2026-11-16 su catania.obj: 142 elementi.<br>Selezione lazo corrente: 36 facce (18 in comune).<br>Che cosa fare?",
@@ -504,7 +513,7 @@ USAP — Attributi:
   plugin_assetstats: () => pluginRun("Statistiche asset", "1.2.0", "Statistiche dell'asset...", [
     { t: "Dataset da analizzare", type: "asset", req: true }, { t: "Selezione corrente", type: "selection" },
     { t: "Rapporto di testo", type: "outputFile", req: true, value: WORK + "/statistiche-asset.txt" },
-    { t: "Unita' dell'estensione", type: "choice", req: true, options: ["metri", "chilometri"] },
+    { t: "Unita' dell'estensione", type: "choice", req: true, options: ["metri", "centimetri", "piedi"] },
     { t: "Decimali", type: "integer", value: 3, min: 0, max: 9 }, { t: "Nota", type: "text" }]),
   pluginResult: () => ({
     title: "Statistiche asset 1.2.0 — Risultato", w: 600,
@@ -542,9 +551,9 @@ Componenti di terze parti: vedi licenses\\THIRD-PARTY.md</div>`,
   },
 
   /* ===== Pannelli e albero ===== */
-  rename: () => ({ title: "Rinomina", w: 380, body: H.form(H.row("Nuovo nome:", H.input("catania.obj"))), foot: OK_CANCEL() }),
   layerOpacity: () => ({ title: "Opacità", w: 380, body: `<div>Opacità del layer:</div><div class="pathrow"><input type="range" min="0" max="100" value="85" style="flex:1"><span>0,85</span></div>`, foot: OK_CANCEL() }),
-  rasterHeight: () => ({ title: "Altezza", w: 400, body: H.form(H.row("Altezza (m) rispetto alla posizione di caricamento:", H.num("0.0", -10000, 10000, 1))), foot: [{ t: "Ripristina", left: true }, ...OK_CANCEL()] }),
+  rasterHeight: () => ({ title: "Altezza del raster", w: 440, body: `<div>Sposta 'DTM_Catania_166.tif' verso l'alto (valore positivo) o verso il basso (negativo) rispetto a dove è stato caricato:</div>
+    <div class="pathrow">${H.num("0.0", -10000, 10000, 1)} m <button class="btn sm">Torna all'altezza di caricamento</button></div>`, foot: OK_CANCEL() }),
   removeLayer: () => msg("question", "Rimuovi", "Rimuovere il layer dalla scena e dalla sessione?<br><span class='muted'>Il file non viene cancellato.</span>",
     [{ t: "Sì", primary: true, close: true }, { t: "No", close: true }]),
   saveLog: () => fileDlg({ title: "Salva il Log", mode: "save", folder: WORK, filter: ["Testo (*.txt)", "CSV (*.csv)"], files: [], name: "city3d-log-20261118.txt" }),

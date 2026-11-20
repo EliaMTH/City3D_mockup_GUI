@@ -1,4 +1,4 @@
-/* Motore del mockup v2. Usa ACTIONS/MENUS/LAYER_ACTIONS (menus.js), DIALOGS (dialogs.js)
+/* Motore del mockup. Usa ACTIONS/MENUS/LAYER_ACTIONS (menus.js), DIALOGS (dialogs.js)
  * e TOP_TOOLBAR/VIEWPORT_TOOLBAR/PANELS/ICONS (layout.js). Nessuna dipendenza esterna. */
 (() => {
   "use strict";
@@ -9,7 +9,7 @@
   /* ================= stato delle azioni (condiviso fra menu e pulsantiere) ================= */
   const STATE = {};
   for (const [id, a] of Object.entries(ACTIONS)) if (a.chk !== undefined && !a.dock) STATE[id] = a.chk;
-  let pendingAnnotation = false; // §3.6: lazo armato da «Annotazioni della selezione»
+  let pendingAnnotation = false; // lazo armato da «Nuova annotazione» (README › Vista 3D)
 
   function setChecked(id, on) {
     const a = ACTIONS[id];
@@ -26,9 +26,9 @@
   function execAction(id) {
     const a = ACTIONS[id];
     if (!a || a.dis) return;
-    // §2.2: con un comando aperto non se ne apre un secondo
+    // con un comando aperto non se ne apre un secondo (README › Comandi nel pannello a destra)
     if ((a.dlg || id === "new_annotation") && cmdStack.length) return refuseBusy();
-    // §2.2 punto 5: la selezione non cambia mentre un comando la sta usando
+    // la selezione non cambia mentre un comando la sta usando (README › Comandi nel pannello a destra)
     if (isSelectionAction(id) && selectionLocked()) return refuseSelection();
     if (a.dock) {
       const p = DOCK_TO_PANEL[a.dock];
@@ -36,21 +36,25 @@
     }
     if ((id === "lasso" || id === "lasso_line") && !STATE[id] && !lassoAllowed(id)) return;
     if (id === "query_mouse" && !STATE[id] && !queryAllowed()) return;
+    // come nella release, l'ultimo modo di disegno acceso non si spegne (mainwindow.cpp:10201) (README › Vista 3D)
+    const DRAW = ["draw_solid", "draw_wire", "draw_vertex"];
+    if (DRAW.includes(id) && STATE[id] && !DRAW.some((o) => o !== id && STATE[o])) return;
     if (a.chk !== undefined) {
-      const turnOff = a.group && STATE[id] && a.group !== "selmode" && a.group !== "draw";
+      const turnOff = a.group && STATE[id] && a.group !== "selmode";
       setChecked(id, a.group ? !turnOff : !STATE[id]);
+      if (id === "query_mouse") TREE.filter((n) => SELECTION[n.id]).forEach((n) => setSelection(n, 0));
       const m = id === "lasso" ? lassoMessage() : a.log;
       if (m && STATE[id]) addLog("info", m);
       return;
     }
     if (id === "new_annotation") {
-      // §3.6: con una selezione apre la finestra su quella; senza, arma il lazo e la apre quando il lazo si chiude
+      // con una selezione apre la finestra su quella; senza, arma il lazo e la apre quando il lazo si chiude (README › Vista 3D)
       const asset = assetOf(selectedRow) || TREE.find((n) => n.id === "m1");
       if (SELECTION[asset.id].count) return openDialog("selectionAnnotations", null, { title: cleanTitle(a.t) });
       if (assetOf(selectedRow) !== asset) selectRow(asset.id);
       setChecked("lasso", true);
       pendingAnnotation = true;
-      addLog("info", `Annotazioni della selezione: disegna il lazo su '${asset.name}'; quando lo chiudi si apre la finestra.`);
+      addLog("info", `Nuova annotazione su '${asset.name}': disegna il lazo nella vista; quando lo chiudi si apre il pannello.`);
       return;
     }
     if (id === "clear_selection") { setSelection(assetOf(selectedRow) || TREE.find((n) => n.id === "m1"), 0); return addLog("info", "Selezione annullata."); }
@@ -60,14 +64,14 @@
     if (a.log !== undefined) addLog("info", a.log || `${a.t}.`);
   }
 
-  /* §3.1: un solo lazo, il tipo segue l'asset selezionato; a parte il lazo sugli spigoli (solo mesh) */
+  /* un solo lazo, il tipo segue l'asset selezionato; a parte il lazo sugli spigoli (solo mesh) (README › Vista 3D) */
   function lassoAllowed(id) {
     const asset = assetOf(selectedRow);
     if (!asset) { hint("Seleziona nell'albero l'asset 3D su cui usare il lazo: una mesh o una nuvola di punti."); return false; }
     if (id === "lasso_line" && asset.kind !== "mesh") { hint("Il lazo sugli spigoli lavora solo sulle mesh."); return false; }
     return true;
   }
-  /* §3.7: Interroga legge le proprietà degli elementi di un layer GIS (nella release anche dei set .ant) */
+  /* Interroga legge le proprietà degli elementi di un layer GIS (nella release anche dei set .ant) (README › Vista 3D) */
   const queryAllowed = () => TREE.find((x) => x.id === selectedRow).kind === "gis" ||
     (hint("Interroga legge le proprietà degli elementi di un layer GIS: selezionane uno nell'albero."), false);
   function lassoMessage() {
@@ -99,19 +103,14 @@
   const tip = $("#tooltip");
   let tipTimer = null;
   document.addEventListener("mouseover", (e) => {
-    const el = e.target.closest("[data-tip],[data-note]");
+    const el = e.target.closest("[data-tip]");
     clearTimeout(tipTimer);
     tip.style.display = "none";
     if (!el) return;
-    let text = el.dataset.tip || "";
-    let isNote = false;
-    if (document.body.classList.contains("review") && el.dataset.note) {
-      text = (text ? text + "\n\n" : "") + "Nota di revisione: " + el.dataset.note; isNote = true;
-    }
+    const text = el.dataset.tip || "";
     if (!text) return;
     tipTimer = setTimeout(() => {
       tip.textContent = text;
-      tip.classList.toggle("note", isNote);
       tip.style.display = "block";
       const r = el.getBoundingClientRect();
       const x = Math.min(r.left + 8, innerWidth - tip.offsetWidth - 8);
@@ -145,12 +144,10 @@
         row.insertAdjacentHTML("beforeend", `<span>${esc(a.t)}</span>`);
         if (a.sc) row.insertAdjacentHTML("beforeend", `<span class="sc">${a.sc}</span>`);
         if (a.dis && a.tip) row.dataset.tip = a.tip;
-        if (a.note) row.dataset.note = a.note;
         row.addEventListener("click", (e) => { e.stopPropagation(); if (a.dis) return; closeMenus(); execAction(it); });
       } else {
         row.classList.add("sub");
         row.innerHTML = `<span>${esc(it.t)}</span>`;
-        if (it.note) row.dataset.note = it.note;
         row._sub = it;
       }
       row.addEventListener("mouseenter", () => {
@@ -220,7 +217,6 @@
         const a = ACTIONS[item.a];
         b.innerHTML = `${icon(item.icon, 17)}<span>${item.label}</span>`;
         b.dataset.tip = a.t + (a.sc ? ` (${a.sc})` : "");
-        if (a.note) b.dataset.note = a.note;
         b.addEventListener("click", () => execAction(item.a));
       }
       tb.appendChild(b);
@@ -251,7 +247,6 @@
           it.seg.forEach(([id, label]) => {
             const s = document.createElement("span");
             s.textContent = label; s.dataset.tip = "Vista: " + ACTIONS[id].t;
-            if (ACTIONS[id].note) s.dataset.note = ACTIONS[id].note;
             s.addEventListener("click", () => execAction(id));
             seg.appendChild(s);
           });
@@ -279,7 +274,6 @@
     b.innerHTML = icon(ic, 17);
     if (isSelectionAction(id)) b.dataset.sel = "";
     b.dataset.tip = a.t + (a.tip ? "\n" + a.tip : "");
-    if (a.note) b.dataset.note = a.note;
     b.addEventListener("click", () => execAction(id));
     return b;
   }
@@ -300,14 +294,14 @@
     return b;
   }
   function selectPanel(id, force) {
-    if (cmdStack.length && !force) return refuseBusy(); // §2.2: pannello bloccato finché il comando è aperto
+    if (cmdStack.length && !force) return refuseBusy(); // pannello bloccato finché il comando è aperto (README › Comandi nel pannello a destra)
     currentPanel = id;
     $$("#strip .sbtn").forEach((b) => b.classList.toggle("active", b.dataset.panelBtn === id));
     $$(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === id));
     if (id === "log") { const d = $('#strip .sbtn[data-panel-btn="log"] .dot'); if (d) d.remove(); $("#log-wrap").scrollTop = 1e9; }
   }
 
-  /* ================= comando nel pannello a destra (PROPOSTA-UI.md §2) ================= */
+  /* ================= comando nel pannello a destra (README › Comandi nel pannello a destra) ================= */
   const cmdStack = []; // livelli del comando aperto: { id, ctx, spec, title, target }
   let panelBeforeCmd = null;
 
@@ -320,7 +314,7 @@
   function startCmd(id, ctx, title) {
     panelBeforeCmd = currentPanel;
     cmdStack.push(makeLevel(id, ctx, title));
-    // §2.2 punto 5: selezione bloccata; uno strumento di selezione armato si spegne
+    // selezione bloccata; uno strumento di selezione armato si spegne (README › Comandi nel pannello a destra)
     const follows = FOLLOWS_SELECTION.has(id);
     document.body.classList.add("cmd-open");
     document.body.classList.toggle("sel-free", follows);
@@ -367,6 +361,7 @@
     el.className = "btn" + (b.primary ? " primary" : "");
     el.textContent = b.t;
     el.addEventListener("click", () => {
+      if (b.run) b.run();
       if (b.log) addLog("info", b.log);
       if (b.next) {
         if (FLOATING_KIND[b.next]) { if (b.close) popCmd(); openFloating(b.next, b.ctx); }
@@ -415,7 +410,7 @@
     { id: "s1", kind: "spherical", name: "sferiche_centro.csv", depth: 1, vis: true },
   ];
   const FIELDS = {
-    p:  [["Cartella", WORK + "/catania_demo"], ["CRS", "EPSG:25833 — ETRS89 / UTM zone 33N"], ["Dataset", "2 dataset 3D, 2 layer GIS, 3 raster, 1 CityGML"], ["Sessione", "project.json (salvata 18/11/26 10:42)"]],
+    p:  [["Cartella", WORK + "/catania_demo"], ["CRS", "EPSG:25833 — ETRS89 / UTM zone 33N"], ["Dataset 3D", "2"]],
     m1: [["File", "geometry/mesh/catania.obj"], ["CRS", "EPSG:25833"], ["Vertici", "84.133"], ["Facce", "136.733"],
          ["Estensione", "x: 505.912 – 508.324\ny: 4.150.881 – 4.152.915\nz: 0 – 61"], ["Aspetto", "colore uniforme #969696"], ["Opacità", "1,00"],
          ["Asset USAP", "riconosciuto per hash in catania.usap.gpkg (id 3)"], ["Dimensione", "7,5 MB"], ["Modificato", "16/11/26 11:36"]],
@@ -441,6 +436,7 @@
     for (const n of TREE) {
       const row = document.createElement("div");
       row.className = `trow kind-${n.kind}` + (n.id === selectedRow ? " sel" : "");
+      row.dataset.id = n.id;
       row.style.paddingLeft = 8 + n.depth * 16 + "px";
       row.innerHTML = `<span class="tw">${n.kids ? "▾" : ""}</span><span class="ticon">${icon(TREE_ICON[n.kind], 15)}</span>` +
         (n.color ? `<span class="swatch" style="background:${n.color}"></span>` : "") +
@@ -448,7 +444,8 @@
         `<span class="tcrs">${n.crs || ""}</span><span class="eye${n.vis ? "" : " off"}" data-tip="${n.vis ? "Nascondi" : "Mostra"}">${icon(n.vis ? "eye" : "eyeOff", 15)}</span>`;
       row.addEventListener("click", (e) => {
         if (e.target.closest(".eye")) { n.vis = !n.vis; renderTree(); if (n.id === selectedRow) renderProps(); return; }
-        if (cmdStack.length) return n.id === selectedRow || refuseTreeSelection(); // §2.2 punto 5
+        if (e.target.isContentEditable) return;
+        if (cmdStack.length) return n.id === selectedRow || refuseTreeSelection(); // selezione bloccata (README › Comandi nel pannello a destra)
         selectRow(n.id);
       });
       row.addEventListener("contextmenu", (e) => {
@@ -473,10 +470,10 @@
     return null;
   }
 
-  /* §10: aspetto dell'asset, tre modi esclusivi; spenti quelli che il file non ha */
+  /* aspetto dell'asset, tre modi esclusivi; spenti quelli che il file non ha (README › Proprietà del layer e tasto destro) */
   const APPEARANCE = { m1: "uniform", m2: "file" };
   const APPEAR_AVAIL = { m1: { uniform: true, file: true, texture: false }, m2: { uniform: true, file: true } };
-  const APPEAR_LABEL = { uniform: "Colore uniforme", file: "Colori del file", texture: "Texture" };
+  const APPEAR_LABEL = { uniform: "Colore uniforme…", file: "Colori del file", texture: "Texture" };
   function appearanceOptions(n) {
     return Object.keys(APPEAR_LABEL).filter((k) => k in APPEAR_AVAIL[n.id]).map((k) => {
       const why = k === "file" ? `Il file di '${n.name}' non ha colori per vertice.`
@@ -484,16 +481,36 @@
       return { k, label: APPEAR_LABEL[k], on: APPEARANCE[n.id] === k, ok: APPEAR_AVAIL[n.id][k], why };
     });
   }
-  function setAppearance(n, o) {
+  function setAppearance(n, o, chosen) {
     if (!o.ok) return hint(o.why);
+    if (o.k === "uniform" && !chosen) return openDialog("geomColor", { onOk: () => setAppearance(n, o, true) }, { title: "Colore uniforme" });
     APPEARANCE[n.id] = o.k;
     const row = FIELDS[n.id].find(([k]) => k === "Aspetto");
     row[1] = o.k === "uniform" ? `colore uniforme ${n.color}` : o.k === "file" ? "colori del file" : "texture";
-    addLog("info", `Aspetto di '${n.name}': ${o.label.toLowerCase()}.`);
     renderProps();
+  }
+  /* Rinomina: come nella release, il nome si modifica direttamente nell'albero (mainwindow.cpp:14854). */
+  function startRename(n, nameEl) {
+    const old = n.name;
+    nameEl.contentEditable = "true";
+    nameEl.focus();
+    document.getSelection().selectAllChildren(nameEl);
+    const done = (keep) => {
+      nameEl.contentEditable = "false";
+      const v = nameEl.textContent.trim();
+      n.name = keep && v ? v : old;
+      renderTree();
+      if (typeof renderProps === "function") renderProps();
+    };
+    nameEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); done(true); }
+      if (e.key === "Escape") { e.preventDefault(); done(false); }
+    });
+    nameEl.addEventListener("blur", () => nameEl.isContentEditable && done(true), { once: true });
   }
   function layerAction(n, act) {
     const [label, target] = act;
+    if (target === "rename") return startRename(n, $(`#tree .trow[data-id="${n.id}"] .tname`));
     if (label === "Nascondi" || label === "Mostra") { n.vis = !n.vis; renderTree(); renderProps(); return; }
     if (!target) return addLog("info", `${label}: ${n.name}`);
     if (target.startsWith("@")) return selectPanel("cityobject");
@@ -504,11 +521,11 @@
     const box = $("#layer-props");
     box.innerHTML = `<div class="lp-head"><span class="ticon">${icon(TREE_ICON[n.kind], 22)}</span><div><div class="lp-name">${esc(n.name)}</div>
         <div class="lp-kind">${KIND_LABEL[n.kind]}${n.crs ? " · " + n.crs : ""}</div></div></div>
-      <div class="lp-actions"${LAYER_ACTIONS_NOTE ? ` data-note="${esc(LAYER_ACTIONS_NOTE)}"` : ""}></div>
+      <div class="lp-actions"></div><div class="lp-more">Altre azioni: tasto destro sulla riga nell'albero.</div>
       <div class="table-wrap"><table class="grid"><thead><tr><th>Proprietà</th><th>Valore</th></tr></thead>
       <tbody>${[["Visibile", n.vis ? "sì" : "no"], ...(FIELDS[n.id] || [])].map(([k, v]) => `<tr><td>${k}</td><td style="white-space:pre">${esc(v)}</td></tr>`).join("")}</tbody></table></div>`;
     const wrap = $(".lp-actions", box);
-    LAYER_ACTIONS[ACTIONS_KEY[n.kind]].forEach((act) => {
+    LAYER_ACTIONS[ACTIONS_KEY[n.kind]].filter((act) => PANEL_ACTIONS.has(act[1])).forEach((act) => { // README › Proprietà del layer e tasto destro
       if (act[1] === "@appearance") {
         const line = document.createElement("div");
         line.className = "lp-appear";
@@ -532,7 +549,7 @@
     renderStats();
     updateLassoButtons();
   }
-  // §3.3: conteggi del solo asset selezionato (o dell'asset della riga); nessun totale
+  // conteggi del solo asset selezionato (o dell'asset della riga); nessun totale (README › Vista 3D)
   const SELECTION = { m1: { count: 29008, unit: "facce" }, m2: { count: 0, unit: "punti" } };
   const fmt = (n) => n.toLocaleString("it-IT");
   function renderStats() {
@@ -550,7 +567,7 @@
   /* Lazo finto: con il lazo attivo, un clic nella vista chiude un lazo e applica il modo scelto. */
   $("#viewport").addEventListener("click", (e) => {
     if (e.target.closest("#vp-toolbar, #gizmo, #vp-hl, #vp-stats")) return;
-    if (STATE.query_mouse) { // §3.7: l'esito va nel pannello; un nuovo clic lo sostituisce
+    if (STATE.query_mouse) { // l'esito va nel pannello; un nuovo clic lo sostituisce (README › Vista 3D)
       const ctx = { layer: TREE.find((x) => x.id === selectedRow).name };
       if (cmdStack.length && cmdStack.at(-1).id === "gisFeature") return replaceCmd("gisFeature", ctx);
       return openDialog("gisFeature", ctx, { title: "Elemento GIS" });
@@ -567,14 +584,14 @@
     addLog("info", `Lazo chiuso su '${asset.name}': ${fmt(n)} ${unit} (${how}). Selezione: ${fmt(count)} ${unit}.`);
     if (pendingAnnotation) {
       setChecked("lasso", false); // come nella release: lo strumento si posa prima della finestra (mainwindow.cpp:10388)
-      openDialog("selectionAnnotations", null, { title: "Annotazioni della selezione" });
+      openDialog("selectionAnnotations", null, { title: "Nuova annotazione" });
     }
   });
   function showContextMenu(x, y, n) {
     closeMenus();
     const m = document.createElement("div");
     m.className = "menu";
-    LAYER_ACTIONS[ACTIONS_KEY[n.kind]].forEach((act) => {
+    LAYER_ACTIONS[ACTIONS_KEY[n.kind]].filter((act) => !PANEL_ACTIONS.has(act[1])).forEach((act) => { // README › Proprietà del layer e tasto destro
       if (act[1] === "@appearance") {
         if (m.lastChild && !m.lastChild.classList.contains("sep")) m.appendChild(Object.assign(document.createElement("div"), { className: "sep" }));
         for (const o of appearanceOptions(n)) {
@@ -603,7 +620,7 @@
   const winLayer = $("#windows");
   let zTop = 3000, cascade = 0;
 
-  /* Instradamento (PROPOSTA-UI.md §2): i comandi vanno nel pannello a destra; restano mobili le
+  /* Instradamento (README › Comandi nel pannello a destra): i comandi vanno nel pannello a destra; restano mobili le
    * eccezioni di FLOATING (proposta.js) e tutto ciò che si apre da una finestra mobile.
    * opts.from = elemento cliccato, opts.floating = passo successivo di una finestra mobile. */
   function openDialog(id, ctx, opts = {}) {
@@ -673,8 +690,6 @@
       if (cmdStack.length) return refuseBusy();
       selectPanel(go.dataset.panelGo); if (go.dataset.level) $("#log-level").selectedIndex = +go.dataset.level; return;
     }
-    const sr = e.target.closest("[data-select-row]");
-    if (sr) { if (cmdStack.length) return refuseBusy(); selectRow(sr.dataset.selectRow); selectPanel("props"); return; }
     const d = e.target.closest("[data-dlg]:not(tr)");
     if (d && !d.closest(".menu")) return openDialog(d.dataset.dlg, null, { from: d });
     if (e.target.closest("[data-clear-log]")) { $("#log-table tbody").innerHTML = ""; return; }
@@ -735,16 +750,54 @@
         const name = id === "bldg_w29315736" ? "Building — Teatro Greco Romano" : id === "bldg_w57687520" ? "Building — Tirrenia TTLines" : "Building";
         return `<tr${id === "bldg_w29315736" ? ' class="sel"' : ""}><td class="i1">▸ ${name}</td><td>${id}</td><td>1 annotazione</td></tr>`;
       }).join("") + `<tr class="grp"><td>▸ ReliefFeature (1 istanza)</td><td></td><td></td></tr>`;
-    const concepts = [
-      ["Building", [["ann_bldg_w29315736", "Teatro Greco Romano", 3401, 124], ["ann_bldg_w175894049", "", 412, 96], ["ann_bldg_w129894441", "", 210, 210]]],
-      ["RoofSurface", [["ann_bldg_w29315736_Roof_1", "", 214, 88], ["ann_bldg_w175894049_Roof_1", "", 60, 60]]],
-      ["WallSurface", [["ann_bldg_w29315736_Wall_3", "", 41, 12], ["ann_bldg_w29315736_Wall_4", "", 38, 9]]],
-      ["Altro", [["ann_bldg_w129894441_Ground", "(nessun concetto)", 18, 18]]],
+    // Risultati lazo come nella release (dialogs/lasso_results_panel.cpp): Sintesi per concetto (elementi selezionati
+    // coperti da ogni concetto, più Altro) e una scheda per annotazione, con i dettagli e i collegamenti al pannello CityObject.
+    const CONCEPT_COLOR = { RoofSurface: "#1f77b4", WallSurface: "#d96b0a", GroundSurface: "#b88a00", Door: "#2ca02c",
+      Window: "#179cb0", Building: "#9467bd", LandUse: "#8c564b" };
+    const STATUS_COLOR = { accepted: "#2ca02c", rejected: "#c0392b" }; // gli altri stati: grigio
+    const SELECTED = 44559; // 29.008 facce + 15.551 vertici
+    // uid, concetto, stato, confidenza, etichetta, ultimo assessment, sua data, elementi nella selezione, CityObject, edificio
+    const hits = [
+      ["ann_bldg_w29315736", "Building", "draft", "0,90", "Teatro Greco Romano", "asm_bldg_w29315736_3", "2026-11-16", 3401, "bldg_w29315736", ""],
+      ["ann_bldg_w29315736_Roof_1", "RoofSurface", "draft", "0,90", "", "asm_bldg_w29315736_Roof_1", "", 214, "bldg_w29315736_Roof_1", "bldg_w29315736"],
+      ["ann_bldg_w29315736_Wall_3", "WallSurface", "accepted", "0,85", "", "asm_bldg_w29315736_Wall_3", "", 41, "bldg_w29315736_Wall_3", "bldg_w29315736"],
+      ["ann_bldg_w29315736_Wall_4", "WallSurface", "draft", "", "", "asm_bldg_w29315736_Wall_4", "", 38, "bldg_w29315736_Wall_4", "bldg_w29315736"],
+      ["ann_bldg_w175894049", "Building", "draft", "0,90", "", "asm_bldg_w175894049", "", 412, "bldg_w175894049", ""],
+      ["ann_bldg_w175894049_Roof_1", "RoofSurface", "rejected", "0,40", "", "asm_bldg_w175894049_Roof_1", "", 60, "bldg_w175894049_Roof_1", "bldg_w175894049"],
     ];
-    $("#lasso-results").innerHTML = concepts.map(([c, list]) => `<tr class="grp"><td>▾ ${c} (${list.length})</td></tr>` +
-      list.map(([uid, lab, n, s], i) => `<tr${c === "Building" && i === 0 ? ' class="sel"' : ""} data-panel-go="annotation"><td class="i1">${uid}${lab ? " — " + lab : ""}<br><span class="muted">${n} elementi · ${s} nella selezione · catania.obj</span></td></tr>`).join("")).join("");
-    $$("#lasso-results td").forEach((td) => (td.style.height = "auto"));
-    $("#usap-panel").innerHTML = DIALOGS.usapPanel().body; // §11.1: la finestra diventa un pannello fisso (proposta.js)
+    const fmt = (v) => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const perConcept = {};
+    hits.forEach((h) => (perConcept[h[1]] = (perConcept[h[1]] || 0) + h[7]));
+    const annotated = hits.filter((h) => !h[9]).reduce((s, h) => s + h[7], 0); // le superfici stanno dentro il loro edificio
+    $("#lasso-selected").textContent = `Elementi selezionati: ${fmt(SELECTED)}`;
+    $("#lasso-concepts").innerHTML = Object.keys(perConcept).sort().map((c) =>
+      `<tr><td style="color:${CONCEPT_COLOR[c] || "inherit"}">${c}</td><td>${fmt(perConcept[c])}</td></tr>`).join("") +
+      `<tr><td style="color:#888888">Altro</td><td>${fmt(SELECTED - annotated)}</td></tr>`;
+    $("#lasso-caption").textContent = `Risultati (annotazioni trovate: ${hits.length})`;
+    $("#lasso-results").innerHTML = hits.map(([uid, c, st, conf, lab, asm, date, sel, co, top], i) => `<div class="lr-item${i === 0 ? " sel" : ""}">
+        <div class="lr-card"><span class="lr-tw">▾</span><span class="lr-dot" style="background:${STATUS_COLOR[st] || "#888888"}"></span>
+          <span class="lr-uid">${uid}</span><span class="lr-right">Stato: ${st}</span>
+          <span></span><span></span><span style="color:${CONCEPT_COLOR[c] || "inherit"}">${c}</span><span class="lr-right">Confidenza: ${conf || "—"}</span></div>
+        <div class="lr-kids">
+          <div class="lr-detail">Etichetta: ${lab || uid}<br>Assessment: ${asm}${date ? `<br>Data: ${date}` : ""}<br>Asset 3D: catania.obj<br>Elementi nella selezione: ${fmt(sel)}</div>
+          <div class="lr-link" data-panel-go="cityobject" data-tip="Mostra questo CityObject nella scheda CityObject">CityObject: ${co}</div>
+          ${top ? `<div class="lr-link" data-panel-go="cityobject" data-tip="Mostra il Building nella scheda CityObject">Parte di Building: ${top}</div>` : ""}
+        </div></div>`).join("");
+    // Un clic sceglie la riga; un doppio clic apre il pannello Annotazione; i collegamenti aprono il pannello CityObject.
+    const lr = $("#lasso-results");
+    lr.addEventListener("click", (e) => {
+      const item = e.target.closest(".lr-item");
+      if (!item || e.target.closest(".lr-link")) return;
+      if (e.target.closest(".lr-tw")) return item.classList.toggle("closed");
+      $$("#lasso-results .lr-item.sel").forEach((x) => x.classList.remove("sel"));
+      item.classList.add("sel");
+    });
+    lr.addEventListener("dblclick", (e) => {
+      if (!e.target.closest(".lr-card")) return;
+      if (cmdStack.length) return refuseBusy();
+      selectPanel("annotation");
+    });
+    $("#usap-panel").innerHTML = DIALOGS.usapPanel().body; // la finestra diventa un pannello fisso (proposta.js) (README › Pannelli della striscia)
   }
 
   /* ================= scena 3D finta ================= */
@@ -775,17 +828,16 @@
       <circle cx="18" cy="34" r="5" fill="none" stroke="#e05a5a" stroke-width="1.5"/><circle cx="56" cy="24" r="5" fill="none" stroke="#6cc070" stroke-width="1.5"/></svg>`;
   }
 
-  /* ================= evidenziazione dei plugin (PROPOSTA-UI.md §3.4) ================= */
+  /* ================= evidenziazione dei plugin (README › Vista 3D) ================= */
   let pluginHighlight = null;
   function showPluginHighlight(h) {
     pluginHighlight = h;
-    $("#vp-hl-text").textContent = `Evidenziati dal plugin «${h.plugin}»: ${h.what}`;
+    $("#vp-hl-text").textContent = "Evidenziazione dei plugin";
     $("#vp-hl").classList.remove("hidden");
     $("#plugin-hl").style.display = "";
   }
   $("#vp-hl .hl-x").addEventListener("click", () => {
     if (!pluginHighlight) return;
-    addLog("info", `Evidenziazione del plugin «${pluginHighlight.plugin}» tolta.`);
     pluginHighlight = null;
     $("#vp-hl").classList.add("hidden");
     $("#plugin-hl").style.display = "none";
@@ -794,11 +846,11 @@
   /* ================= tour ================= */
   const TOUR = [
     ["#menubar", "Menu", "Tutti i comandi, raggruppati per argomento (struttura attuale, da rivedere)."],
-    ["#project-chip", "Progetto e CRS", "Il progetto attivo e il suo sistema di riferimento: un clic sul nome mostra le proprietà del progetto, un clic sul CRS lo cambia."],
-    ["#top-toolbar", "Apertura, importazione, esportazione", "Nuovo, apri, salva; Importa ed Esporta raccolgono tutti i tipi di dato."],
-    ["#vp-toolbar", "Strumenti della vista", "Lazo (facce sulle mesh, punti sulle nuvole) e lazo sugli spigoli, modalità di selezione; viste, modo di disegno (esclusivo); annotazione della selezione."],
+    ["#project-chip", "Progetto e CRS", "Il progetto attivo e il suo sistema di riferimento. Il CRS si cambia con «Imposta CRS…» nel tasto destro sulla riga del progetto."],
+    ["#top-toolbar", "Progetto e risorse", "Nuovo progetto, Apri progetto, Salva progetto; poi Importa ed Esporta per le risorse del progetto."],
+    ["#vp-toolbar", "Strumenti della vista", "Lazo (facce sulle mesh, punti sulle nuvole) e lazo sugli spigoli, modalità di selezione; viste, modo di disegno (combinabile); annotazione della selezione."],
     ["#viewport", "Vista 3D", "La scena, sempre utilizzabile: i comandi non la coprono. In alto a destra l'orientamento, in basso a sinistra i conteggi dell'asset selezionato."],
-    ["#outliner", "Progetti", "L'albero dei progetti e dei layer; l'occhio mostra o nasconde, il tasto destro apre le azioni."],
+    ["#outliner", "Progetti", "L'albero dei progetti e dei layer; l'occhio mostra o nasconde, il tasto destro apre le azioni di gestione."],
     ["#strip", "Pannelli", "Un'icona per pannello: proprietà del layer, CityObject, annotazione, risultati del lazo, mappa, concetti, Log."],
     ["#panel-host", "Pannello selezionato", "Il contenuto del pannello scelto. Anche i comandi si aprono qui: in cima alla striscia compare un'icona ambra e il pannello resta bloccato finché il comando non è concluso."],
     ["#logline", "Riga di log", "L'ultimo messaggio e i contatori di avvisi ed errori: un clic apre il pannello Log."],
@@ -828,7 +880,6 @@
 
   /* ================= avvio ================= */
   $("#app-ico").innerHTML = icon("app", 16);
-  $("#review-toggle").addEventListener("change", (e) => document.body.classList.toggle("review", e.target.checked));
   renderMenubar();
   renderTopToolbar();
   renderViewportToolbar();
@@ -840,9 +891,8 @@
   INITIAL_LOG.forEach(([lvl, txt], i) => addLog(lvl, txt, `11:41:${String(30 + i).padStart(2, "0")}`));
   selectPanel("props");
 
-  /* Link diretti: #dlg=preferences · #menu=Visualizza · #panel=log · #highlight · #review · #tour (combinabili con &) */
+  /* Link diretti: #dlg=preferences · #menu=Visualizza · #panel=log · #highlight · #tour (combinabili con &) */
   const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.has("review")) { $("#review-toggle").checked = true; document.body.classList.add("review"); }
   if (hash.get("panel")) selectPanel(hash.get("panel"));
   if (hash.get("dlg")) hash.get("dlg").split(",").forEach((d) => openDialog(d));
   if (hash.get("menu")) {
