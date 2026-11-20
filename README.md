@@ -88,7 +88,7 @@ La proposta riorganizza l'interfaccia senza aggiungere funzioni: tutto ciò che 
 |---|---|
 | Importa | Carica mesh, Carica nuvola di punti, Importa CityGML, Apri dataset annotato, Carica raster, Carica layer GIS, Carica immagini sferiche, Immagini sferiche…, Carica dal datalake, e Carica valori (CSV, TXT) dalle Proprietà dell'asset. Anche i loro passi successivi: CRS del file, copia nel progetto, livello di dettaglio, variabile NetCDF, colore per attributo, esito. |
 | Esporta | Esporta progetto (.zip), Screenshot, Inventario di una cartella |
-| Progetto | Nuovo progetto, Apri progetto, Chiudi progetto |
+| Progetto | Nuovo progetto, Apri progetto, Chiudi progetto, Verifica file orfani |
 | Applicazione | Preferenze, Gestione plugin (con la sua installazione da file) |
 | Info | Licenza, Guida introduttiva |
 | Visualizzatore a 360° | l'immagine sferica navigabile |
@@ -156,7 +156,7 @@ Sopra la vista: in alto a destra l'orientamento interattivo, sempre visibile; in
 
 **Conteggi dell'asset selezionato.**
 - **Oggi.** `updateVertexCellCount()` (`mainwindow.cpp:14019`) scrive nella barra di stato i conteggi dell'asset selezionato, o dell'asset della riga selezionata. Con il progetto selezionato, o nessuna riga, mostra il totale degli asset visibili: «Asset visibili (totale): … vertici e punti, … facce».
-- **Proposta.** L'etichetta va in basso a sinistra nella vista e mostra sempre i conteggi dell'asset selezionato; senza un asset 3D selezionato non compare. Togliere il totale è un cambio di comportamento, chiesto a DVISION con un ticket a parte: il totale somma in un solo numero vertici delle mesh e punti delle nuvole, e non riguarda l'oggetto su cui si lavora.
+- **Proposta.** L'etichetta va in basso a sinistra nella vista e mostra sempre i conteggi dell'asset selezionato; senza un asset 3D selezionato non compare. Togliere il totale è un cambio di comportamento: il totale somma in un solo numero vertici delle mesh e punti delle nuvole, e non riguarda l'oggetto su cui si lavora.
 
 **Evidenziazione dei plugin: un'etichetta nella vista.**
 - **Oggi.** Un plugin può evidenziare oggetti o elementi nella vista 3D (API 1.3), e l'evidenziazione resta dopo la chiusura del comando. Si toglie con Plugin › Togli evidenziazione dei plugin (`actionClearPluginHighlight`, `mainwindow.cpp:14283`), abilitata solo quando c'è un'evidenziazione, o con «Togli evidenziazione» nell'esito del plugin (`plugin_run_widget.cpp:204`), che serve solo finché il modulo è aperto.
@@ -261,7 +261,7 @@ In City3D progetto e sessione sono lo stesso file, `project.json`, nella cartell
 | Imposta cartella di lavoro | `actionSet_working_folder`, `mainwindow.cpp:10681` | tolta | scrive la stessa impostazione di Preferenze › Cartelle |
 | Preferenze... | `actionPreferences`, `mainwindow.cpp:784` | resta, in una sezione a parte | |
 | Imposta CRS di progetto | `actionSet_project_CRS`, `mainwindow.cpp:11163` | tolta | Si cambia con «Imposta CRS…» nel tasto destro sulla riga del progetto (`layerinfo::actions_for`, `Kind::Project`). Il CRS in alto a destra è solo da leggere. Le Preferenze hanno solo il CRS proposto ai nuovi progetti, che è un'altra cosa. |
-| Verifica file orfani ... | `actionCheck_project_for_orphan_files`, `mainwindow.cpp:11158` | tolta | Non è nei requisiti (nessuna user story): viene dal prototipo. Senza il comando, i file dei dataset tolti dal progetto restano nella cartella del progetto (`mainwindow.cpp:10956` per le geometrie, `mainwindow.cpp:15629` per i layer GIS). |
+| Verifica file orfani ... | `actionCheck_project_for_orphan_files`, `mainwindow.cpp:11158` | resta | Serve perché togliere un dataset dal progetto non cancella il file, che resta nella cartella del progetto (`mainwindow.cpp:10956` per le geometrie, `mainwindow.cpp:15629` per i layer GIS). Oggi elenca anche file in uso: da correggere (ticket 05). |
 | Screenshot ... | `actionTake_screenshot` | spostata | menu Esporta della pulsantiera |
 
 Menu Progetto risultante:
@@ -271,6 +271,7 @@ Nuovo progetto
 Apri progetto
 Salva progetto           Ctrl+S
 Chiudi progetto
+Verifica file orfani ...
 ─────────────
 Preferenze...            Ctrl+,
 ```

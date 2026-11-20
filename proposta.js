@@ -48,13 +48,12 @@ ACTIONS.save_session.t = "Salva progetto";
     [{ t: "Salva", primary: true, log: SAVED, close: true }, { t: "Non salvare", close: true }, { t: "Annulla", close: true }]);
 }
 Object.assign(MENUS.find((m) => m.t === "File"), { t: "Progetto", items: [
-  "new_project", "open_project", "save_session", "close_project", SEP,
+  "new_project", "open_project", "save_session", "close_project", "orphan_files", SEP,
   "preferences",
 ]});
 // Tolte: Apri un file di progetto, Carica dal datalake (è in Importa), Salva la sessione con nome,
 // Esporta › (è il menu Esporta della pulsantiera, con il suo Plugin ›), Imposta cartella di lavoro
-// (Preferenze), Imposta CRS di progetto (tasto destro sulla riga del progetto), Screenshot (è in Esporta),
-// Verifica file orfani (non è nei requisiti: viene dal prototipo).
+// (Preferenze), Imposta CRS di progetto (tasto destro sulla riga del progetto), Screenshot (è in Esporta).
 // «Salva la sessione con nome» esce anche dalle azioni del progetto nell'albero.
 LAYER_ACTIONS.project = LAYER_ACTIONS.project.filter(([label]) => label !== "Salva la sessione con nome");
 
@@ -196,7 +195,7 @@ const FLOATING = {
                  "loadSpherical", "sphericalLoaded", "sphericalImages", "loadGis",
                  "loadData", "importText"], // Carica valori (CSV, TXT): azione dell'asset, ma è un import (README › Proprietà del layer e tasto destro)
   esporta:      ["exportZip", "exportDone", "screenshot", "plugin_inventory"],
-  progetto:     ["newProject", "openProject", "closeProject", "projectCrs"],
+  progetto:     ["newProject", "openProject", "closeProject", "projectCrs", "orphanFiles"],
   applicazione: ["preferences", "pluginManager", "addPlugin", "pluginInstalled"],
   info:         ["licence", "welcome"],
   vista360:     ["sphericalViewer"],

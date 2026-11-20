@@ -209,8 +209,21 @@ const DIALOGS = {
     foot: [{ t: "Ripristina predefiniti", left: true }, { t: "OK", primary: true, close: true, log: "Preferenze salvate." }, { t: "Annulla", close: true }],
   }),
   projectCrs: () => epsgDlg("Seleziona sistema di riferimento (EPSG)"),
-  orphanFiles: () => msg("question", "Verifica file orfani", "Nella cartella del progetto ci sono 3 file non usati dalla sessione:<br><span class='code'>geometry/mesh/catania (1).obj\ngeometry/pointcloud/prova.las\nannotations/vecchio_set.ant</span><br>Eliminarli?",
-    [{ t: "Elimina", primary: true, close: true, log: "3 file orfani eliminati." }, { t: "Annulla", close: true }]),
+  // Come nella release (check_and_cleanup_orphan_files, mainwindow.cpp:11063): percorsi completi,
+  // nessuno spuntato, OK cancella quelli spuntati e lo dice in «Pulizia file».
+  orphanFiles: () => {
+    window.__orphanChecked = 0;
+    const files = ["geometry/mesh/catania (1).obj", "geometry/pointcloud/prova.las", "data/gpkg/edifici_vecchi.gpkg"]
+      .map((f) => `${WORK}/catania_demo/${f}`);
+    return {
+      title: "File orfani trovati", w: 390,
+      body: `<div>Sono stati trovati i seguenti file non collegati al progetto.<br>Seleziona quelli che vuoi eliminare:</div>
+        <div class="table-wrap" style="height:150px;margin-top:6px" onchange="window.__orphanChecked = this.querySelectorAll('input:checked').length">
+        <table class="grid small"><tbody>${files.map((f) => `<tr><td>${H.check(f, false)}</td></tr>`).join("")}</tbody></table></div>`,
+      foot: OK_CANCEL("orphanFilesDone"),
+    };
+  },
+  orphanFilesDone: () => msg("info", "Pulizia file", `Sono stati eliminati ${window.__orphanChecked || 0} file.`),
   screenshot: () => fileDlg({ title: "Screenshot", mode: "save", folder: WORK, filter: ["Immagine PNG (*.png)"], files: [["vista_teatro.png", "1,2 MB", "File png"]], name: "screenshot_20261118.png" }),
 
   /* ===== Geometria ===== */
